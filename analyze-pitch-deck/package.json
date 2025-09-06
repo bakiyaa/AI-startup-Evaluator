@@ -1,0 +1,15 @@
+{
+  "name": "analyze-pitch-deck",
+  "version": "1.0.0",
+  "description": "Cloud Function to analyze pitch decks using Gemini.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.0.0",
+    "@google-cloud/firestore": "^7.0.0",
+    "google-generativeai": "^0.1.0",
+    "pdf-parse": "^1.1.1"
+  }
+}

@@ -21,26 +21,31 @@ const FileUpload = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
+    const filesToUpload = [file];
     if (supportingFile) {
-      formData.append('supportingFile', supportingFile);
+      filesToUpload.push(supportingFile);
     }
 
-    try {
-      const response = await fetch('http://localhost:5000/upload', {
-        method: 'POST',
-        body: formData,
-      });
+    for (const fileToUpload of filesToUpload) {
+      try {
+        // 1. Get signed URL from Cloud Function
+        const signedUrlResponse = await fetch(`https://us-central1-qwiklabs-gcp-01-b1e0c819d981.cloudfunctions.net/generateSignedUrl?fileName=${fileToUpload.name}&contentType=${fileToUpload.type}`);
+        const { url } = await signedUrlResponse.json();
 
-      if (response.ok) {
-        alert('Files uploaded successfully');
-      } else {
-        alert('Failed to upload files');
+        // 2. Upload file to Google Cloud Storage
+        await fetch(url, {
+          method: 'PUT',
+          body: fileToUpload,
+          headers: {
+            'Content-Type': fileToUpload.type,
+          },
+        });
+
+        alert(`${fileToUpload.name} uploaded successfully`);
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        alert(`Error uploading ${fileToUpload.name}`);
       }
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      alert('Error uploading files');
     }
   };
 

@@ -1,0 +1,12 @@
+{
+  "name": "generate-signed-url",
+  "version": "1.0.0",
+  "description": "Cloud Function to generate signed URLs for Google Cloud Storage.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.0.0"
+  }
+}
