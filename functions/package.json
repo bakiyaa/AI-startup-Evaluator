@@ -1,0 +1,17 @@
+{
+  "name": "ai-startup-evaluator-functions",
+  "version": "1.0.0",
+  "description": "Cloud Functions for the AI Startup Evaluator",
+  "main": "index.js",
+  "scripts": {
+    "start": "functions-framework --target=process-document"
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.0.0",
+    "@google-cloud/storage": "^6.0.0",
+    "@google-cloud/vision": "^3.0.0",
+    "@google-cloud/speech": "^5.0.0",
+    "@google-cloud/firestore": "^6.0.0",
+    "@google/generative-ai": "^0.1.0"
+  }
+}
