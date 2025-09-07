@@ -22,7 +22,7 @@ graph TD
 
     subgraph Analysis & Serving
         G[User] --> H(React App)
-        H -->|Initiates Analysis| I[ADK Agent (MCP Client)]
+        H -->|Initiates Analysis| I["ADK Agent (MCP Client)"]
         I -->|Connects to| J[MCP Server on Cloud Run]
         
         subgraph MCP Tools
