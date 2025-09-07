@@ -1,158 +1,66 @@
 #!/bin/bash
 
-# ------------------------------------------------------------------------------
-# Configuration
-# ------------------------------------------------------------------------------
-# Replace the following placeholder values with your actual configuration.
+# This script sets up the necessary GCP infrastructure for the AI Startup Evaluator application.
+#
+# IMPORTANT:
+# 1. Make sure you have the gcloud CLI installed and authenticated.
+# 2. Replace the placeholder values (e.g., YOUR_PROJECT_ID) with your actual values.
 
-# GCP Project Configuration
-GCP_PROJECT_ID="your-gcp-project-id"
-GCP_REGION="us-central1"
+# --- Configuration ---
+export PROJECT_ID="YOUR_PROJECT_ID_HERE" # <-- IMPORTANT: REPLACE THIS WITH YOUR ACTUAL GCP PROJECT ID
+export REGION="us-central1" # Choose the region that is best for you
+export BUCKET_NAME="usecase1-your-unique-name" # <-- IMPORTANT: REPLACE THIS WITH A GLOBALLY UNIQUE BUCKET NAME
+export SERVICE_ACCOUNT_NAME="cloud-function-runner"
 
-# Service Account Configuration
-SERVICE_ACCOUNT_NAME="startup-evaluator-sa"
+# --- Setup ---
 
-# GCS Configuration
-GCS_BUCKET_NAME="your-unique-bucket-name"
+echo "--- Setting project to $PROJECT_ID ---"
+gcloud config set project $PROJECT_ID
 
-# Firestore Configuration
-FIRESTORE_COLLECTION_NAME="deal-notes"
-
-# Cloud Functions Configuration
-GENERATE_SIGNED_URL_FUNCTION_NAME="generateSignedUrl"
-PROCESS_DOCUMENT_FUNCTION_NAME="processDocument"
-
-# ------------------------------------------------------------------------------
-# Script Start
-# ------------------------------------------------------------------------------
-
-echo "Starting infrastructure setup for project: $GCP_PROJECT_ID"
-
-# Set the project for the gcloud commands
-gcloud config set project $GCP_PROJECT_ID
-
-# ------------------------------------------------------------------------------
-# Enable GCP APIs
-# ------------------------------------------------------------------------------
-echo "Enabling necessary GCP APIs..."
+echo "--- Enabling required APIs ---"
 gcloud services enable \
-  cloudbuild.googleapis.com \
   cloudfunctions.googleapis.com \
+  storage.googleapis.com \
   vision.googleapis.com \
   speech.googleapis.com \
-  aiplatform.googleapis.com \
   firestore.googleapis.com \
-  iam.googleapis.com \
-  storage-component.googleapis.com
+  iam.googleapis.com
 
-# ------------------------------------------------------------------------------
-# Create Service Account and Grant IAM Roles
-# ------------------------------------------------------------------------------
-echo "Creating service account: $SERVICE_ACCOUNT_NAME..."
+echo "--- Creating Firestore database ---"
+# Note: Firestore can only be created once per project. If you already have one, this will fail.
+gcloud firestore databases create --location=$REGION
+
+echo "--- Creating Cloud Storage bucket: $BUCKET_NAME ---"
+gcloud storage buckets create gs://$BUCKET_NAME --location=$REGION
+
+echo "--- Creating service account: $SERVICE_ACCOUNT_NAME ---"
 gcloud iam service-accounts create $SERVICE_ACCOUNT_NAME \
-  --display-name="Service Account for AI Startup Evaluator"
+  --display-name="Cloud Function Runner"
 
-SERVICE_ACCOUNT_EMAIL="$SERVICE_ACCOUNT_NAME@$GCP_PROJECT_ID.iam.gserviceaccount.com"
+# Construct the full service account email
+export SERVICE_ACCOUNT_EMAIL="$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com"
 
-echo "Granting IAM roles to the service account..."
-# Roles for generateSignedUrl function
-gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
+echo "--- Granting IAM roles to service account ---"
+# Grant roles to the service account
+gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" \
-  --role="roles/storage.objectCreator"
+  --role="roles/cloudfunctions.invoker"
 
-# Roles for processDocument function
-gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
+gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" \
-  --role="roles/storage.objectViewer"
-gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
-  --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" \
-  --role="roles/datastore.user"
-gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
+  --role="roles/storage.objectAdmin"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" \
   --role="roles/vision.user"
-gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" \
-  --role="roles/speech.user"
-gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
+  --role="roles/cloudtranslate.user" # Note: Speech-to-Text uses the Cloud Translation role
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" \
-  --role="roles/aiplatform.user"
+  --role="roles/datastore.user" # Note: Firestore uses the Datastore role
 
-
-# ------------------------------------------------------------------------------
-# Create GCS Bucket
-# ------------------------------------------------------------------------------
-echo "Creating GCS bucket: $GCS_BUCKET_NAME..."
-gsutil mb -p $GCP_PROJECT_ID -l $GCP_REGION gs://$GCS_BUCKET_NAME
-
-# ------------------------------------------------------------------------------
-# Create Firestore Database
-# ------------------------------------------------------------------------------
-echo "Creating Firestore database..."
-gcloud firestore databases create --location=$GCP_REGION
-
-# ------------------------------------------------------------------------------
-# Deploy Cloud Functions
-# ------------------------------------------------------------------------------
-echo "Deploying Cloud Functions..."
-
-# Deploy generateSignedUrl function
-echo "Deploying $GENERATE_SIGNED_URL_FUNCTION_NAME function..."
-gcloud functions deploy $GENERATE_SIGNED_URL_FUNCTION_NAME \
-  --runtime=nodejs18 \
-  --trigger-http \
-  --allow-unauthenticated \
-  --region=$GCP_REGION \
-  --source=./functions \
-  --entry-point=generateSignedUrl \
-  --service-account=$SERVICE_ACCOUNT_EMAIL \
-  --set-env-vars=GCS_BUCKET_NAME=$GCS_BUCKET_NAME
-
-# Deploy processDocument function
-echo "Deploying $PROCESS_DOCUMENT_FUNCTION_NAME function..."
-gcloud functions deploy $PROCESS_DOCUMENT_FUNCTION_NAME \
-  --runtime=nodejs18 \
-  --trigger-resource=$GCS_BUCKET_NAME \
-  --trigger-event=google.storage.object.finalize \
-  --region=$GCP_REGION \
-  --source=./functions \
-  --entry-point=processDocument \
-  --service-account=$SERVICE_ACCOUNT_EMAIL \
-  --set-env-vars=GCS_BUCKET_NAME=$GCS_BUCKET_.NAME,FIRESTORE_COLLECTION_NAME=$FIRESTORE_COLLECTION_NAME,GCP_PROJECT=$GCP_PROJECT_ID
-
-# ------------------------------------------------------------------------------
-# Script End
-# ------------------------------------------------------------------------------
-echo "Infrastructure setup completed successfully!"
-
-# ------------------------------------------------------------------------------
-# Update .env.local file
-# ------------------------------------------------------------------------------
-echo "Updating .env.local file..."
-
-ENV_FILE=".env.local"
-
-# Function to update or add a variable to the .env.local file
-update_env_var() {
-  local var_name=$1
-  local var_value=$2
-  if grep -q "^$var_name=" "$ENV_FILE"; then
-    # Variable exists, so we replace it
-    sed -i "s|^$var_name=.*|$var_name=$var_value|" "$ENV_FILE"
-  else
-    # Variable does not exist, so we append it
-    echo "$var_name=$var_value" >> "$ENV_FILE"
-  fi
-}
-
-# Create the file if it doesn't exist
-touch $ENV_FILE
-
-# Update the variables
-update_env_var "REACT_APP_PROJECT_ID" "$GCP_PROJECT_ID"
-update_env_var "REACT_APP_STORAGE_BUCKET" "$GCS_BUCKET_NAME"
-SIGNED_URL_FUNCTION_URL=$(gcloud functions describe $GENERATE_SIGNED_URL_FUNCTION_NAME --region=$GCP_REGION --format='value(https_trigger.url)')
-update_env_var "REACT_APP_SIGNED_URL_FUNCTION_URL" "$SIGNED_URL_FUNCTION_URL"
-
-echo ".env.local file updated successfully!"
-echo "Please fill in the remaining values in .env.local (e.g., Firebase credentials)."
-
+echo "--- Infrastructure setup complete ---"
+echo "Remember to update your .env file with your project details."

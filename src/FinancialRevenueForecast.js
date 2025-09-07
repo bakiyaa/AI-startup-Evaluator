@@ -10,7 +10,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const FinancialRevenueForecast = () => {
   return (
-    <div className="financial-revenue-forecast">
+    <div className="financial-revenue-forecast card">
       <h3>Financial Revenue Forecast</h3>
       <div className="charts-container">
         <div className="chart">

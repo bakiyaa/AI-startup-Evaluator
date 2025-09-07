@@ -9,10 +9,10 @@ const Header = () => {
         <div className="logo">SparkCode</div>
       </div>
       <nav className="header-nav">
-        <a href="#" className="nav-item">Deal Summary</a>
-        <a href="#" className="nav-item">Bench Marking</a>
-        <a href="#" className="nav-item">Risk Analysis</a>
-        <a href="#" className="nav-item">Views</a>
+        <a href="/" className="nav-item">Deal Summary</a>
+        <a href="/" className="nav-item">Bench Marking</a>
+        <a href="/" className="nav-item">Risk Analysis</a>
+        <a href="/" className="nav-item">Views</a>
       </nav>
       <div className="header-right">
         <button className="icon-btn">&#128276;</button>

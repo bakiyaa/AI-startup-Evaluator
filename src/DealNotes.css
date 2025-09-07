@@ -1,13 +1,11 @@
-.deal-notes {
-  margin-top: 20px;
-}
+@import './Card.css';
 
 .deal-note {
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 15px;
-  background-color: #fff;
+  background-color: #f9f9f9;
 }
 
 .deal-note h4 {

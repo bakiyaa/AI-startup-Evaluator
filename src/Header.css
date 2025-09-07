@@ -3,13 +3,14 @@
     justify-content: space-between;
     align-items: center;
     padding: 10px 20px;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
+    background-color: #fff;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .header-left {
     display: flex;
     align-items: center;
+    gap: 15px;
 }
 
 .menu-btn {
@@ -20,30 +21,30 @@
 }
 
 .logo {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: bold;
-    margin-left: 10px;
 }
 
 .header-nav {
     display: flex;
+    gap: 30px;
 }
 
 .nav-item {
-    margin: 0 15px;
     text-decoration: none;
     color: #333;
+    font-size: 16px;
 }
 
 .header-right {
     display: flex;
     align-items: center;
+    gap: 20px;
 }
 
 .icon-btn {
     background: none;
     border: none;
-    font-size: 20px;
-    margin-left: 15px;
+    font-size: 24px;
     cursor: pointer;
 }
