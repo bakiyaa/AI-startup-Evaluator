@@ -4,40 +4,49 @@
 
 This use case specifies a powerful and cost-effective hybrid architecture for startup analysis. It combines the strengths of AI-native services with powerful analytics engines.
 
-First, **Vertex AI Vector Search** is used to perform a semantic search and identify a startup's true peer group based on deep similarity, not just industry tags. Then, **BigQuery** is used to perform fast and efficient benchmark calculations (averages, medians, etc.) on the KPI data of this AI-curated peer group. 
+First, **Vertex AI Vector Search** is used to perform a semantic search and identify a startup's true peer group. Then, **BigQuery** is used to perform fast and efficient benchmark calculations on the KPI data of this AI-curated peer group. This approach ensures highly relevant, nuanced benchmarking while leveraging BigQuery's cost-effective analytical power.
 
-This approach ensures highly relevant, nuanced benchmarking while leveraging BigQuery's cost-effective analytical power. The framework also includes tools for forecasting and generating investment suggestions with Gemini, all exposed via a flexible **Model Context Protocol (MCP) server**.
+Vectorization of the deal notes is an **on-demand process** initiated from the UI. A user can choose to vectorize a single note or run a batch process to vectorize all historical notes in Firestore. This populates the Vertex AI Vector Search index, making the notes available for the analysis tools.
+
+The analysis capabilities (benchmarking, forecasting) are exposed via a flexible **Model Context Protocol (MCP) server**.
 
 ## 2. GCP Hybrid Architecture
 
 ```mermaid
 graph TD
-    subgraph Data Ingestion & Vectorization
+    subgraph Data Ingestion
         A[Raw Data: Pitch Decks, Notes] -->|Stored in| B(Cloud Storage)
-        B -->|Triggers| C[Cloud Function]
-        C -->|Generates Embeddings| D(Vertex AI Embedding Model)
-        D -->|Stores Vectors| E(Vertex AI Vector Search)
-        A -->|Structured KPIs| F(BigQuery / Firestore)
+        A -->|Structured KPIs & Notes| F(Firestore)
     end
 
     subgraph Analysis & Serving
         G[User] --> H(React App)
-        H -->|Initiates Analysis| I["ADK Agent (MCP Client)"]
-        I -->|Connects to| J[MCP Server on Cloud Run]
         
-        subgraph MCP Tools
-            J --> K(Benchmarking Tool)
-            J --> L(Forecasting Tool)
-            J --> M(Suggestion Tool)
+        subgraph On-Demand Vectorization
+            H -->|1. Triggers| C(HTTP Cloud Function)
+            C -->|2. Reads Notes| F
+            C -->|3. Generates Embeddings| D(Vertex AI Embedding Model)
+            D -->|4. Stores Vectors| E(Vertex AI Vector Search)
         end
 
-        K -->|1. Find Peer IDs| E
-        K -->|2. Calculate Benchmarks| F
-        L -->|Gets Historical KPIs| F
-        M -->|Synthesizes Insights| N(Vertex AI - Gemini API)
-    end
+        subgraph AI-Powered Analysis
+            H -->|Initiates Analysis| I["ADK Agent (MCP Client)"]
+            I -->|Connects to| J[MCP Server on Cloud Run]
+            
+            subgraph MCP Tools
+                J --> K(Benchmarking Tool)
+                J --> L(Forecasting Tool)
+                J --> M(Suggestion Tool)
+            end
 
-    I -->|Returns Final Analysis| H
+            K -->|Finds Peer IDs| E
+            K -->|Calculates Benchmarks| F
+            L -->|Gets Historical KPIs| F
+            M -->|Synthesizes Insights| N(Vertex AI - Gemini API)
+        end
+
+        I -->|Returns Final Analysis| H
+    end
 ```
 
 ## 3. UML Sequence Diagram

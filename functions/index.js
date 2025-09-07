@@ -68,3 +68,74 @@ ${extractedText}`;
 
   console.log('Deal notes saved to Firestore.');
 });
+
+
+// Usecase 2: On-demand HTTP function to create vector embeddings for one or all documents
+functions.http('vectorize-deal-note', async (req, res) => {
+  const docId = req.body.docId;
+
+  const { PredictionServiceClient } = require('@google-cloud/aiplatform').v1;
+  const { IndexEndpointServiceClient } = require('@google-cloud/aiplatform').v1;
+  const clientOptions = { apiEndpoint: 'us-central1-aiplatform.googleapis.com' };
+  const predictionServiceClient = new PredictionServiceClient(clientOptions);
+  const indexEndpointServiceClient = new IndexEndpointServiceClient(clientOptions);
+
+  const project = process.env.PROJECT_ID; // Your Google Cloud project ID
+  const location = process.env.LOCATION; // e.g., 'us-central1'
+  const endpointId = 'textembedding-gecko@003';
+  const endpoint = `projects/${project}/locations/${location}/publishers/google/models/${endpointId}`;
+  const indexEndpoint = `projects/${project}/locations/${location}/indexEndpoints/${process.env.INDEX_ENDPOINT_ID}`;
+
+  let documents = [];
+
+  if (docId) {
+    // Process a single document
+    console.log(`Processing single Firestore document: ${docId}`);
+    const firestoreDoc = await firestore.collection('deal-notes').doc(docId).get();
+    if (firestoreDoc.exists) {
+      documents.push({ id: firestoreDoc.id, data: firestoreDoc.data() });
+    } else {
+      return res.status(404).send('Document not found.');
+    }
+  } else {
+    // Process all documents
+    console.log('Processing all documents in deal-notes collection.');
+    const snapshot = await firestore.collection('deal-notes').get();
+    snapshot.forEach(doc => {
+      documents.push({ id: doc.id, data: doc.data() });
+    });
+  }
+
+  if (documents.length === 0) {
+    return res.status(200).send('No documents to process.');
+  }
+
+  try {
+    for (const doc of documents) {
+      const noteData = doc.data;
+      const textToEmbed = `Company: ${noteData.companyName}. Problem: ${noteData.problem}. Solution: ${noteData.solution}. Market: ${noteData.market}.`;
+
+      const [response] = await predictionServiceClient.predict({
+        endpoint,
+        instances: [{ content: textToEmbed }],
+      });
+
+      const embedding = response.predictions[0].structValue.fields.embedding.listValue.values.map(v => v.numberValue);
+
+      await indexEndpointServiceClient.upsertDatapoints({
+        indexEndpoint,
+        datapoints: [
+          {
+            datapointId: doc.id,
+            featureVector: embedding,
+          },
+        ],
+      });
+      console.log(`Vector embedding upserted for document: ${doc.id}`);
+    }
+    res.status(200).send(`Successfully processed ${documents.length} document(s).`);
+  } catch (error) {
+    console.error('Error during vectorization:', error);
+    res.status(500).send('An error occurred during vectorization.');
+  }
+});
