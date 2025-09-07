@@ -2,13 +2,18 @@
 
 ## 1. Functionality
 
-This use case covers the initial ingestion and analysis of startup documents. The user will be able to upload various file types (pitch decks, call transcripts, emails), and the system will automatically extract the text and generate structured deal notes.
+This use case covers the initial ingestion and analysis of startup documents. The user will be able to upload documents through two distinct interfaces:
+1.  **Pitch Deck Upload:** For pitch decks in PDF or PPT format.
+2.  **Supporting Document Upload:** For other documents such as call transcripts (text or audio), founder updates (emails, PDFs), and emails (plain text or HTML).
+
+The system will automatically extract the text from these documents and generate structured deal notes.
 
 ## 2. GCP Architecture
 
 ```mermaid
 graph TD
-    A[User] -->|Uploads File| B(React App)
+    A[User] -->|Uploads Pitch Deck| B(React App)
+    A -->|Uploads Supporting Docs| B
     B -->|Stores File| C(Google Cloud Storage)
     C -->|Triggers| D(Cloud Function)
     D -->|Extracts Text| E{Cloud Vision AI / Speech-to-Text}
@@ -32,8 +37,13 @@ sequenceDiagram
     User->>ReactApp: Uploads Pitch Deck
     ReactApp->>GCS: Stores Pitch Deck
     GCS-->>CloudFunction: Triggers on new file
-    CloudFunction->>GCS: Downloads Pitch Deck
-    CloudFunction->>VisionAPI: Extracts text from PDF
+
+    User->>ReactApp: Uploads Supporting Document
+    ReactApp->>GCS: Stores Supporting Document
+    GCS-->>CloudFunction: Triggers on new file
+
+    CloudFunction->>GCS: Downloads File
+    CloudFunction->>VisionAPI: Extracts text from file
     VisionAPI-->>CloudFunction: Returns extracted text
     CloudFunction->>GeminiAPI: Sends text for analysis
     GeminiAPI-->>CloudFunction: Returns structured deal notes

@@ -1,7 +1,25 @@
 .deal-notes {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
-    margin-top: 20px;
+  margin-top: 20px;
+}
+
+.deal-note {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background-color: #fff;
+}
+
+.deal-note h4 {
+  margin-top: 0;
+  color: #333;
+}
+
+.deal-note p {
+  margin-bottom: 5px;
+  color: #666;
+}
+
+.deal-note p strong {
+  color: #333;
 }
