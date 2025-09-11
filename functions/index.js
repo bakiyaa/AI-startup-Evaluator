@@ -48,7 +48,8 @@ functions.cloudEvent('process-document', async (cloudEvent) => {
       audio: { content: fileBuffer.toString('base64') },
       config: { encoding: 'LINEAR16', sampleRateHertz: 16000, languageCode: 'en-US' },
     });
-    extractedText = response.results.map(result => result.alternatives[0].transcript).join('\n');
+    extractedText = response.results.map(result => result.alternatives[0].transcript).join('
+');
   } else {
     // For plain text
     extractedText = fileBuffer.toString('utf-8');

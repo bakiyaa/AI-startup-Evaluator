@@ -80,7 +80,7 @@ const Sidebar = () => {
 
   return (
     <aside className="sidebar">
-      <h2>AI Investment Analyst</h2>
+      <h2>Deal Information</h2>
       <p className="subtitle">Synthesize data to generate investment insights</p>
 
       <button className="upload-btn" onClick={triggerPitchDeckInput}>

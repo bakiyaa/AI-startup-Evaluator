@@ -1,1 +1,24 @@
 @import './Card.css';
+
+.risk-analysis ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.risk-item {
+    padding: 8px;
+    border-left: 4px solid #ccc;
+    margin-bottom: 8px;
+}
+
+.risk-item.severity-high {
+    border-left-color: #dc3545; /* red */
+}
+
+.risk-item.severity-medium {
+    border-left-color: #ffc107; /* yellow */
+}
+
+.risk-item.severity-low {
+    border-left-color: #28a745; /* green */
+}

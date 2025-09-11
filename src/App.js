@@ -2,36 +2,32 @@ import React, { useState } from 'react';
 import './App.css';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import DocumentViewer from './DocumentViewer';
+import InteractiveAnalysis from './InteractiveAnalysis';
 import Benchmarking from './Benchmarking';
-import DealNotes from './DealNotes';
-import RiskAnalysis from './RiskAnalysis';
+import PastAnalyses from './PastAnalyses';
 
 function App() {
-  const [activeView, setActiveView] = useState('Deal Summary');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const handleNavClick = (view) => {
-    setActiveView(view);
-  };
-
-  const renderView = () => {
-    switch (activeView) {
-      case 'Benchmarking':
-        return <Benchmarking />;
-      case 'Risk Analysis':
-        return <RiskAnalysis />;
-      case 'Deal Summary':
-      default:
-        return <DealNotes />;
-    }
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
   };
 
   return (
-    <div className="app">
-      <Header handleNavClick={handleNavClick} />
+    <div className={`app ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+      <Header toggleSidebar={toggleSidebar} />
       <div className="main-container">
-        <Sidebar />
+        {sidebarOpen && <Sidebar />}
         <main className="main-content">
-          {renderView()}
+          <div className="column">
+            <InteractiveAnalysis />
+          </div>
+          <div className="column">
+            <DocumentViewer />
+            <PastAnalyses />
+            <Benchmarking />
+          </div>
         </main>
       </div>
     </div>
