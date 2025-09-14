@@ -3,11 +3,21 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+<<<<<<< HEAD
+=======
+import { AuthProvider } from './AuthContext';
+>>>>>>> 484908c (Initial commit)
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
+<<<<<<< HEAD
     <App />
+=======
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+>>>>>>> 484908c (Initial commit)
   </React.StrictMode>
 );
 

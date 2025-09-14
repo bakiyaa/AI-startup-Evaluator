@@ -1,4 +1,5 @@
 .header {
+<<<<<<< HEAD
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -46,4 +47,36 @@
     font-size: 20px;
     margin-left: 15px;
     cursor: pointer;
+=======
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem; /* Adjusted padding */
+  background-color: var(--background-color); /* Use CSS variable */
+  border-bottom: 1px solid var(--border-color); /* Use CSS variable */
+}
+
+.header-title h1 {
+  font-size: 1.2rem; /* Adjusted font size */
+  margin: 0;
+}
+
+.header-title p {
+  margin: 0;
+  color: var(--secondary-text-color); /* Use CSS variable */
+  font-size: 0.8rem; /* Adjusted font size */
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem; /* Adjusted font size */
+  cursor: pointer;
+  color: var(--text-color); /* Use CSS variable */
+>>>>>>> 484908c (Initial commit)
 }

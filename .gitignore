@@ -1,2 +1,10 @@
 node_modules
 .env.local
+.env
+build/
+.firebase/
+terraform/terraform.tfvars
+terraform/.terraform/
+functions/node_modules/
+terraform/.terraform/
+*.json

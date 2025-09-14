@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React from 'react';
 import './App.css';
 import Header from './Header';
@@ -6,10 +7,17 @@ import FileUpload from './FileUpload';
 import FinancialRevenueForecast from './FinancialRevenueForecast';
 import DealNotes from './DealNotes';
 import RiskAnalysis from './RiskAnalysis';
+=======
+
+import React from 'react';
+import './App.css';
+import InvestmentAnalystPage from './InvestmentAnalystPage';
+>>>>>>> 484908c (Initial commit)
 
 function App() {
   return (
     <div className="app">
+<<<<<<< HEAD
       <Header />
       <div className="main-container">
         <Sidebar />
@@ -26,8 +34,16 @@ function App() {
           </div>
         </main>
       </div>
+=======
+      <InvestmentAnalystPage />
+>>>>>>> 484908c (Initial commit)
     </div>
   );
 }
 
+<<<<<<< HEAD
 export default App;
+=======
+export default App;
+
+>>>>>>> 484908c (Initial commit)

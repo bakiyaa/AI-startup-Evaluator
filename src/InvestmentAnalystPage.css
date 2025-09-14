@@ -1,0 +1,24 @@
+.investment-analyst-page {
+  background-color: var(--surface-color);
+}
+
+.main-content {
+  display: flex;
+  flex-direction: row;
+  padding: 1.5rem 2rem; /* Adjusted padding */
+  gap: 2rem;
+}
+
+.left-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* Adjusted gap */
+}
+
+.right-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* Adjusted gap */
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './DealNotes.css';
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot } from "firebase/firestore";
+<<<<<<< HEAD
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -12,6 +13,9 @@ const firebaseConfig = {
   messagingSenderId: process.env.REACT_APP_MESSAGING_SENDER_ID,
   appId: process.env.REACT_APP_APP_ID
 };
+=======
+import firebaseConfig from './firebaseConfig';
+>>>>>>> 484908c (Initial commit)
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -30,8 +34,13 @@ const DealNotes = () => {
   }, []);
 
   return (
+<<<<<<< HEAD
     <div className="deal-notes">
       <h3>Deal Notes</h3>
+=======
+    <div className="deal-notes card">
+      <h3>Processed Notes</h3>
+>>>>>>> 484908c (Initial commit)
       {dealNotes.map(note => (
         <div key={note.id} className="deal-note">
           <h4>{note.analysis.companyName}</h4>
