@@ -1,49 +1,32 @@
 .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem; /* Adjusted padding */
+  background-color: var(--background-color); /* Use CSS variable */
+  border-bottom: 1px solid var(--border-color); /* Use CSS variable */
 }
 
-.header-left {
-    display: flex;
-    align-items: center;
+.header-title h1 {
+  font-size: 1.2rem; /* Adjusted font size */
+  margin: 0;
 }
 
-.menu-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
+.header-title p {
+  margin: 0;
+  color: var(--secondary-text-color); /* Use CSS variable */
+  font-size: 0.8rem; /* Adjusted font size */
 }
 
-.logo {
-    font-size: 20px;
-    font-weight: bold;
-    margin-left: 10px;
-}
-
-.header-nav {
-    display: flex;
-}
-
-.nav-item {
-    margin: 0 15px;
-    text-decoration: none;
-    color: #333;
-}
-
-.header-right {
-    display: flex;
-    align-items: center;
+.header-actions {
+  display: flex;
+  gap: 1rem;
 }
 
 .icon-btn {
-    background: none;
-    border: none;
-    font-size: 20px;
-    margin-left: 15px;
-    cursor: pointer;
+  background: none;
+  border: none;
+  font-size: 1.2rem; /* Adjusted font size */
+  cursor: pointer;
+  color: var(--text-color); /* Use CSS variable */
 }

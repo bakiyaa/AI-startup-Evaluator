@@ -1,2 +1,14 @@
 node_modules
+<<<<<<< HEAD
 .env.local
+=======
+.env.local
+.env
+build/
+.firebase/
+terraform/terraform.tfvars
+terraform/.terraform/
+functions/node_modules/
+terraform/.terraform/
+*.json
+>>>>>>> 484908c (Initial commit)
