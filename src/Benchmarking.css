@@ -1,0 +1,50 @@
+@import './Card.css';
+
+.benchmarking-report h3 {
+  font-size: 1.1rem;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: var(--text-color);
+}
+
+.benchmarking-report p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.charts-section h4,
+.table-section h4 {
+  font-size: 0.9rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-color);
+}
+
+.table-section table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table-section th,
+.table-section td {
+  border: 1px solid var(--border-color);
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.table-section th {
+  background-color: var(--surface-color);
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.table-section tbody tr:nth-child(even) {
+  background-color: var(--background-color);
+}
+
+.table-section tbody tr:hover {
+  background-color: var(--surface-color);
+}

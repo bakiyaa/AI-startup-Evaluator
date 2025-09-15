@@ -1,0 +1,23 @@
+.analysis-workspace {
+  display: flex;
+  height: calc(100vh - 60px); /* Full height minus header */
+}
+
+.left-panel {
+  width: 40%;
+  padding: 20px;
+  overflow-y: auto;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.right-panel {
+  width: 60%;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}

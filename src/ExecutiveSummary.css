@@ -1,0 +1,56 @@
+.executive-summary h3 {
+  font-size: 1.1rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.executive-summary p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.executive-summary strong {
+  font-weight: 600;
+}
+
+.recommendation-text {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.suggestions-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.5rem;
+}
+
+.suggestions-section h4 {
+  font-size: 0.9rem;
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: var(--text-color);
+}
+
+.suggestions-section ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.suggestions-section li {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.suggestions-section li::before {
+  content: '•'; /* Bullet point */
+  color: var(--primary-color);
+  position: absolute;
+  left: 0;
+}
