@@ -21,22 +21,34 @@ const Controls = ({ weights, setWeights, userComments, setUserComments, handleAn
   const totalWeight = weights.founderMarketFit + weights.problemAndMarket + weights.differentiation + weights.traction;
 
   const handleNormalizeWeights = () => {
-    if (totalWeight === 0) {
+    console.log('Normalize Weights button clicked');
+    const currentTotalWeight = totalWeight; // Capture current total
+    console.log('Current Total Weight:', currentTotalWeight);
+
+    if (currentTotalWeight === 0) {
       setWeights({
         founderMarketFit: 25,
         problemAndMarket: 25,
         differentiation: 25,
         traction: 25,
       });
+      console.log('Weights set to 25 each (total was 0)');
       return;
     }
-    const scalingFactor = 100 / totalWeight;
-    setWeights({
+    const scalingFactor = 100 / currentTotalWeight;
+    const newWeights = {
       founderMarketFit: Math.round(weights.founderMarketFit * scalingFactor),
       problemAndMarket: Math.round(weights.problemAndMarket * scalingFactor),
       differentiation: Math.round(weights.differentiation * scalingFactor),
       traction: Math.round(weights.traction * scalingFactor),
-    });
+    };
+
+    // Adjust the last weight to ensure total is exactly 100 due to rounding
+    const sumOfNewWeights = newWeights.founderMarketFit + newWeights.problemAndMarket + newWeights.differentiation + newWeights.traction;
+    newWeights.traction += (100 - sumOfNewWeights); // Adjust traction to make total exactly 100
+
+    setWeights(newWeights);
+    console.log('New Weights after normalization:', newWeights);
   };
 
   return (
@@ -97,15 +109,12 @@ const Controls = ({ weights, setWeights, userComments, setUserComments, handleAn
         <h4>Analyst Guidance</h4>
         <textarea 
           ref={textareaRef}
+          rows="6" 
           placeholder="Provide specific instructions or questions to guide the AI's focus..."
           value={userComments}
           onChange={(e) => setUserComments(e.target.value)}
         ></textarea>
       </div>
-
-      <button onClick={handleAnalyze} disabled={isAnalyzing || totalWeight !== 100} className="action-button">
-        {isAnalyzing ? 'Analyzing...' : 'Run Analysis'}
-      </button>
 
       <div className="analysis-mode">
         <label>
@@ -127,6 +136,10 @@ const Controls = ({ weights, setWeights, userComments, setUserComments, handleAn
           Filtered Search
         </label>
       </div>
+
+      <button onClick={handleAnalyze} disabled={isAnalyzing || totalWeight !== 100} className="action-button">
+        {isAnalyzing ? 'Analyzing...' : 'Run Analysis'}
+      </button>
     </div>
   );
 };

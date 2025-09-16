@@ -14,7 +14,7 @@ async function findPeerGroup(data) {
       country_code,
       founded_at
     FROM 
-      `${datasetId}.${tableId}`
+      ${datasetId}.${tableId}
     WHERE LOWER(startup_name) != LOWER(@startupName)
   `;
 

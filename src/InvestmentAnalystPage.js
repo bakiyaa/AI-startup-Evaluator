@@ -15,7 +15,12 @@ const InvestmentAnalystPage = () => {
   const [analysisResults, setAnalysisResults] = useState(null);
   const [gapAnalysisQuestions, setGapAnalysisQuestions] = useState([]);
   const [analysisMode, setAnalysisMode] = useState('semantic'); // semantic or filtered
-  const [filters, setFilters] = useState({ keywords: '', startDate: '', endDate: '' });
+  const [filters, setFilters] = useState({
+    keywords: '',
+    publicUrls: '',
+    eventDate: '',
+    eventDescription: ''
+  });
   const [domain, setDomain] = useState('');
   const [peerGroup, setPeerGroup] = useState([]);
   const [uploadedFileNames, setUploadedFileNames] = useState([]);

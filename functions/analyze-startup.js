@@ -5,10 +5,14 @@ const { Storage } = require('@google-cloud/storage');
 const { ImageAnnotatorClient } = require('@google-cloud/vision');
 const { SpeechClient } = require('@google-cloud/speech');
 const { VideoIntelligenceServiceClient } = require('@google-cloud/video-intelligence');
+const { Firestore } = require('@google-cloud/firestore');
 
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+// Initialize Google Cloud clients
+const firestore = new Firestore();
 
 // Initialize Google Cloud clients
 const storage = new Storage();
@@ -18,7 +22,26 @@ const videoIntelligenceClient = new VideoIntelligenceServiceClient();
 const bucketName = 'digital-shadow-417907.appspot.com';
 
 async function getProcessedDocumentsText(fileNames) {
-  // ... (function implementation remains the same)
+  if (!fileNames || fileNames.length === 0) {
+    return '';
+  }
+
+  let allProcessedText = [];
+  for (const fileName of fileNames) {
+    const startupId = fileName.split('.')[0]; // Assuming startupId is fileName without extension
+    const docRef = firestore.collection('startupAnalyses').doc(startupId);
+    const doc = await docRef.get();
+
+    if (doc.exists) {
+      const data = doc.data();
+      if (data.extractedText) {
+        allProcessedText.push(data.extractedText);
+      }
+    } else {
+      console.warn(`No processed data found for file: ${fileName}`);
+    }
+  }
+  return allProcessedText.join('\n\n'); // Join with double newline for readability
 }
 
 async function getStartupMetrics(processedDocumentsText) {
@@ -51,6 +74,7 @@ async function getStartupMetrics(processedDocumentsText) {
 }
 
 async function analyzeStartup(data) {
+  console.log('Received data in analyzeStartup:', JSON.stringify(data, null, 2));
   const { weights, userComments, filters, domain, uploadedFileNames } = data;
 
   // 1. Process Uploaded Documents
@@ -156,4 +180,26 @@ async function analyzeStartup(data) {
   return analysisResults;
 }
 
-module.exports = { analyzeStartup };
+exports.analyzeStartupFunction = async (req, res) => {
+  // Set CORS headers for preflight requests
+  // Allows requests from any origin
+  res.set('Access-Control-Allow-Origin', '*');
+
+  if (req.method === 'OPTIONS') {
+    // Send response to OPTIONS requests
+    res.set('Access-Control-Allow-Methods', 'POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Max-Age', '3600');
+    res.status(204).send('');
+    return;
+  }
+
+  try {
+    const data = req.body; // The request body contains the data for analyzeStartup
+    const results = await analyzeStartup(data);
+    res.status(200).json(results);
+  } catch (error) {
+    console.error('Error in analyzeStartupFunction:', error);
+    res.status(500).send(`Error: ${error.message}`);
+  }
+};

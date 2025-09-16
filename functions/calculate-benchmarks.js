@@ -19,7 +19,7 @@ async function calculateBenchmarks(data) {
       MAX(funding_total_usd) as max_funding_total_usd,
       MAX(funding_rounds) as max_funding_rounds
     FROM 
-      `${datasetId}.${tableId}`
+      ${datasetId}.${tableId}
     WHERE startup_name IN UNNEST(@peerNames)
   `;
 

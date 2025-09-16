@@ -101,37 +101,32 @@ const DealInformation = ({ handleFindPeerGroup, filters, handleFilterChange, onD
         <label><input type="radio" name="revenue" value="pre" /> Pre-Revenue</label>
         <label><input type="radio" name="revenue" value="post" defaultChecked /> Post-Revenue</label>
       </div>
-      <div className="radio-group">
-        <label><input type="radio" name="stage" value="seed" /> Seed</label>
-        <label><input type="radio" name="stage" value="series-a" /> Series A</label>
-      </div>
-      
       <select 
         className="text-input" 
-        value={domain} 
-        onChange={(e) => { setDomain(e.target.value); onDomainChange(e.target.value); }}
+        name="stage" 
+        value={filters.stage || ''} 
+        onChange={handleFilterChange}
       >
-        <option value="">Select Domain / Industry</option>
-        <option value="Fintech">Fintech</option>
-        <option value="Healthtech">Healthtech</option>
-        <option value="Edtech">Edtech</option>
-        <option value="SaaS">SaaS</option>
-        <option value="E-commerce">E-commerce</option>
+        <option value="">Select Stage</option>
+        <option value="seed">Seed</option>
+        <option value="series-a">Series A</option>
       </select>
       
+      <input 
+        type="text" 
+        className="text-input" 
+        placeholder="Domain / Industry (e.g., Fintech, SaaS)"
+        value={domain} 
+        onChange={(e) => { setDomain(e.target.value); onDomainChange(e.target.value); }}
+      />
+
       <h4>Search Filters (for Vertex AI)</h4>
       <div className="filter-group">
         <label htmlFor="keywords">Keywords</label>
         <input type="text" id="keywords" name="keywords" value={filters.keywords} onChange={handleFilterChange} placeholder="e.g., 'B2B SaaS', 'Fintech'" />
       </div>
-      <div className="filter-group">
-        <label htmlFor="startDate">Start Date</label>
-        <input type="date" id="startDate" name="startDate" value={filters.startDate || ''} onChange={handleFilterChange} />
-      </div>
-      <div className="filter-group">
-        <label htmlFor="endDate">End Date</label>
-        <input type="date" id="endDate" name="endDate" value={filters.endDate || ''} onChange={handleFilterChange} />
-      </div>
+      
+      
       <button onClick={handleFindPeerGroup} className="action-button">Find Peer Group</button>
 
     </div>

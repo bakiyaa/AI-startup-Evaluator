@@ -6,6 +6,7 @@ const { SpeechClient } = require('@google-cloud/speech'); // For audio
 const { VideoIntelligenceServiceClient } = require('@google-cloud/video-intelligence'); // For video
 const { Firestore } = require('@google-cloud/firestore'); // For Firestore
 const { BigQuery } = require('@google-cloud/bigquery'); // For BigQuery
+const mammoth = require('mammoth'); // For DOCX processing
 
 const secretManagerClient = new SecretManagerServiceClient();
 const storage = new Storage();
@@ -109,6 +110,11 @@ exports.processDocument = async (cloudEvent) => {
         } else if (contentType.startsWith('text/')) {
             console.log('Handling text file...');
             extractedText = fileContent.toString('utf8');
+        } else if (contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            console.log('Processing DOCX with Mammoth...');
+            const result = await mammoth.extractRawText({ buffer: fileContent });
+            extractedText = result.value; // The raw text
+            console.log('DOCX processing complete.');
         } else {
             console.log('Unsupported content type, skipping:', contentType);
             return;
