@@ -5,6 +5,8 @@ import DealInformation from './DealInformation';
 import Controls from './Controls';
 import InsightDashboard from './InsightDashboard';
 import DataRoom from './DocumentViewer';
+import { db } from './firebaseConfig'; // Import firestore instance
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const InvestmentAnalystPage = () => {
   const [activeTab, setActiveTab] = useState('workspace');
@@ -18,7 +20,7 @@ const InvestmentAnalystPage = () => {
   const [gapAnalysisQuestions, setGapAnalysisQuestions] = useState([]);
   const [filters, setFilters] = useState({ stage: 'seed' });
   const [domain, setDomain] = useState('');
-  const [uploadedFileNames, setUploadedFileNames] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState([]); // Changed from names to full File objects
 
   const [analysisMode, setAnalysisMode] = useState('filtered');
 
@@ -27,50 +29,81 @@ const InvestmentAnalystPage = () => {
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
+    if (uploadedFiles.length === 0) {
+      alert('Please select at least one document to analyze.');
+      return;
+    }
+
     setIsAnalyzing(true);
     setAnalysisStage('initial');
     setAnalysisResults(null);
     setGapAnalysisQuestions([]);
-    setActiveTab('insights'); // Switch to insights tab
+    setActiveTab('insights');
 
-    // Simulate initial analysis
-    setTimeout(() => {
-      if (Math.random() > 0.3) { // 70% chance to find a gap
-        setGapAnalysisQuestions([
-          'What is the estimated monthly burn rate?',
-          'Can you provide more details on the competitive landscape?',
-          'What is the customer acquisition cost (CAC)?'
-        ]);
-        setAnalysisStage('needsApproval');
-      } else {
-        setAnalysisResults({ summary: { recommendation: 'Invest', text: 'Strong team and market position.' } });
-        setAnalysisStage('finalReport');
-      }
+    try {
+      // Helper function to upload a single file
+      const uploadFile = async (file) => {
+        const generateUrlFunctionName = 'generate-signed-url';
+        const region = 'us-central1';
+        const projectId = 'digital-shadow-417907';
+        const generateUrlEndpoint = `https://${region}-${projectId}.cloudfunctions.net/${generateUrlFunctionName}`;
+
+        // 1. Get signed URL
+        const res = await fetch(generateUrlEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: file.name, contentType: file.type }),
+        });
+        if (!res.ok) throw new Error(`Failed to get signed URL for ${file.name}`);
+        const { url } = await res.json();
+
+        // 2. Upload file
+        const uploadRes = await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type },
+          body: file,
+        });
+        if (!uploadRes.ok) throw new Error(`Upload failed for ${file.name}`);
+        
+        console.log(`${file.name} uploaded successfully.`);
+        return `gs://ai-starter-evaluation-bucket-9pguwa/${file.name}`; // Return GCS path
+      };
+
+      // Upload all files in parallel
+      const uploadedFilePaths = await Promise.all(uploadedFiles.map(uploadFile));
+
+      // 3. Submit UI data and file paths to Firestore
+      const dealData = {
+        weights,
+        userComments,
+        domain,
+        filters,
+        analysisMode,
+        uploadedFilePaths, // Array of GCS paths
+        createdAt: serverTimestamp(),
+        status: 'processing', // Initial status
+      };
+
+      const docRef = await addDoc(collection(db, "deals"), dealData);
+      console.log("Deal document written with ID: ", docRef.id);
+
+      // For now, we just show a success message. The backend is processing.
+      // In a real app, you would poll for results or listen for a websocket event.
+      setAnalysisStage('formSent'); // Using 'formSent' stage to indicate processing has started
+
+    } catch (error) {
+      console.error("Analysis submission failed: ", error);
+      alert(`An error occurred: ${error.message}`);
+      setActiveTab('workspace'); // Go back to workspace on error
+    } finally {
       setIsAnalyzing(false);
-    }, 2000);
+    }
   };
 
-  const handleSendForm = () => {
-    setAnalysisStage('formSent');
-    setTimeout(() => {
-      setIsAnalyzing(true);
-      setTimeout(() => {
-        setAnalysisResults({ summary: { recommendation: 'Strong Invest', text: 'Analysis based on augmented data. All previous concerns addressed.' } });
-        setAnalysisStage('finalReport');
-        setIsAnalyzing(false);
-      }, 2000);
-    }, 5000);
-  };
-
-  const handleAnalyzeAnyway = () => {
-    setIsAnalyzing(true);
-    setTimeout(() => {
-      setAnalysisResults({ summary: { recommendation: 'Pass', text: 'Analysis based on incomplete data. Key metrics are missing, proceed with caution.' } });
-      setAnalysisStage('finalReport');
-      setIsAnalyzing(false);
-    }, 2000);
-  };
+  // These are mock functions and can be removed or replaced with real logic
+  const handleSendForm = () => {};
+  const handleAnalyzeAnyway = () => {};
 
   const renderContent = () => {
     switch (activeTab) {
@@ -95,7 +128,7 @@ const InvestmentAnalystPage = () => {
               filters={filters}
               handleFilterChange={handleFilterChange}
               onDomainChange={setDomain}
-              onFilesChange={setUploadedFileNames}
+              onFilesChange={setUploadedFiles} // Changed from setUploadedFileNames
               handleFindPeerGroup={() => {}}
             />
             <Controls 

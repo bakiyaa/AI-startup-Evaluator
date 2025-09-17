@@ -4,35 +4,32 @@ This document contains a diagram illustrating the event-driven data ingestion pi
 
 ```mermaid
 flowchart TD
-    subgraph User Interaction
-        A[React UI] --> B{1. Request Signed URL};
-        B --> C[HTTP Cloud Function: generate-signed-url];
-        C --> A;
-        A --> D[2. Upload File via Signed URL];
-    end
+    subgraph User-Interaction
+        A[React UI]
+        B[HTTP Cloud Function: generate-signed-url]
+        C[Cloud Storage Bucket]
+        D[Eventarc]
+        E[Cloud Workflow: mcp-pipeline]
+        F[Cloud Function: extractText]
+        G[Cloud Function: vectorizeText]
+        H[Firestore]
+        I[Pub/Sub Topic: new-document-ready]
+        J[Other Cloud Functions e.g., analyze-startup]
+        K[Perform further analysis...]
 
-    subgraph Ingestion Pipeline (Event-Driven)
-        D --> E[Cloud Storage Bucket];
-        E -- 3. File Upload Event --> F[Eventarc];
-        F -- 4. Trigger Workflow --> G[Cloud Workflow: mcp-pipeline];
-    end
-
-    subgraph Workflow Steps
-        G --> H[5. Call: extractText];
-        H --> I[Cloud Function: extractText];
-        I -- Extracted Text --> G;
-        G --> J[6. Call: vectorizeText];
-        J --> K[Cloud Function: vectorizeText];
-        K -- Vector Embedding --> G;
-        G --> L[7. Store Data];
-        L --> M[Firestore];
-        G --> N[8. Publish Notification];
-        N --> O[Pub/Sub Topic: new-document-ready];
-    end
-
-    subgraph Downstream Consumers
-        O -- 9. Trigger --> P[Other Cloud Functions e.g., analyze-startup];
-        P --> Q[Perform further analysis...];
+        A --> B;
+        B --> A;
+        A --> C;
+        C --> D;
+        D --> E;
+        E --> F;
+        F --> E;
+        E --> G;
+        G --> E;
+        E --> H;
+        E --> I;
+        I --> J;
+        J --> K;
     end
 ```
 

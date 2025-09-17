@@ -122,9 +122,7 @@ exports.processDocument = async (cloudEvent) => {
 
         if (extractedText) {
             console.log('Feeding extracted text to Gemini for analysis...');
-            const prompt = `Analyze the following text from a startup document and extract key insights, potential risks, and a brief summary:
-
-${extractedText.substring(0, 2000)}...`; // Limit text for prompt
+            const prompt = `Analyze the following text from a startup document and extract key insights, potential risks, and a brief summary:\n\n${extractedText.substring(0, 2000)}...`; // Limit text for prompt
             const result = await model.generateContent(prompt);
             const response = await result.response;
             const text = response.text();

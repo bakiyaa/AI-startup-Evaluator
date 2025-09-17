@@ -1,7 +1,5 @@
 import React, { useState, useRef } from 'react';
 import './Sidebar.css';
-import { storage } from './firebaseConfig';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 const Sidebar = () => {
   const [preRevenue, setPreRevenue] = useState(true);
@@ -10,7 +8,7 @@ const Sidebar = () => {
   const [supportingFile, setSupportingFile] = useState(null);
   const [fundingStage, setFundingStage] = useState('Seed Series');
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState(0); // Progress is simplified now
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState('');
 
@@ -39,35 +37,64 @@ const Sidebar = () => {
       return;
     }
 
-    const uploadFile = (file) => {
-      const storageRef = ref(storage, `uploads/${file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
+    const uploadFile = async (file) => {
       setUploading(true);
       setUploadSuccess(false);
       setError('');
+      setUploadProgress(50); // Indicate progress has started
 
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(progress);
-        },
-        (error) => {
-          setError(`Upload failed: ${error.message}`);
-          setUploading(false);
-        },
-        () => {
-          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-            console.log('File available at', downloadURL);
-            setUploading(false);
-            setUploadSuccess(true);
-            // Reset file inputs after successful upload
-            setPitchDeckFile(null);
-            setSupportingFile(null);
-          });
+      try {
+        // 1. Get a signed URL from our new function
+        const generateUrlFunctionName = 'generate-signed-url'; // Should be an env var
+        const region = 'us-central1'; // Should be an env var
+        const projectId = 'digital-shadow-417907'; // Should be an env var
+        const generateUrlEndpoint = `https://${region}-${projectId}.cloudfunctions.net/${generateUrlFunctionName}`;
+
+        const res = await fetch(generateUrlEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fileName: file.name,
+            contentType: file.type,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to get signed URL: ${await res.text()}`);
         }
-      );
+
+        const { url } = await res.json();
+
+        // 2. Upload the file directly to the bucket using the signed URL
+        const uploadRes = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Content-Type
+            ': file.type,
+          },
+          body: file,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error(`Upload failed: ${await uploadRes.text()}`);
+        }
+
+        setUploadProgress(100);
+        setUploading(false);
+        setUploadSuccess(true);
+        console.log('File uploaded successfully!');
+
+        // Reset file inputs after successful upload
+        setPitchDeckFile(null);
+        setSupportingFile(null);
+
+      } catch (error) {
+        setError(`Upload failed: ${error.message}`);
+        setUploading(false);
+        setUploadProgress(0);
+      }
     };
 
     if (pitchDeckFile) {
@@ -145,7 +172,7 @@ const Sidebar = () => {
       </div>
 
       <button className="submit-btn" onClick={handleSubmit} disabled={uploading}>
-        {uploading ? `Uploading... ${uploadProgress.toFixed(0)}%` : 'Submit'}
+        {uploading ? `Uploading...` : 'Submit'}
       </button>
 
       {uploadSuccess && <p className="success-message">Upload successful!</p>}

@@ -1,0 +1,502 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.7",
+  "serial": 37,
+  "lineage": "af8968f6-e584-e809-efc9-6c4b76ec6085",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "google_cloud_run_service_iam_member",
+      "name": "allow_workflow_to_invoke_process_document",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": []
+    },
+    {
+      "mode": "managed",
+      "type": "google_cloud_run_service_iam_member",
+      "name": "allow_workflow_to_invoke_vectorize_deal_note",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": []
+    },
+    {
+      "mode": "managed",
+      "type": "google_cloud_run_service_iam_member",
+      "name": "make_public",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "condition": [],
+            "etag": "BwY/Af5MSXs=",
+            "id": "v1/projects/digital-shadow-417907/locations/us-central1/services/generate-signed-url/roles/run.invoker/allUsers",
+            "location": "us-central1",
+            "member": "allUsers",
+            "project": "digital-shadow-417907",
+            "role": "roles/run.invoker",
+            "service": "v1/projects/digital-shadow-417907/locations/us-central1/services/generate-signed-url"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "google_cloudfunctions2_function.generate_signed_url",
+            "google_project_service.enable_apis"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_cloudfunctions2_function",
+      "name": "generate_signed_url",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "build_config": [
+              {
+                "automatic_update_policy": [
+                  {}
+                ],
+                "build": "projects/617213468863/locations/us-central1/builds/86e411f2-da5f-4919-a844-a38467143c71",
+                "docker_repository": "projects/digital-shadow-417907/locations/us-central1/repositories/gcf-artifacts",
+                "entry_point": "generateSignedUrl",
+                "environment_variables": {},
+                "on_deploy_update_policy": [],
+                "runtime": "nodejs18",
+                "service_account": "projects/digital-shadow-417907/serviceAccounts/617213468863-compute@developer.gserviceaccount.com",
+                "source": [
+                  {
+                    "repo_source": [],
+                    "storage_source": [
+                      {
+                        "bucket": "digital-shadow-function-source",
+                        "generation": 1758127581222543,
+                        "object": "generate-signed-url.zip"
+                      }
+                    ]
+                  }
+                ],
+                "worker_pool": ""
+              }
+            ],
+            "description": "",
+            "effective_labels": {},
+            "environment": "GEN_2",
+            "event_trigger": [],
+            "id": "projects/digital-shadow-417907/locations/us-central1/functions/generate-signed-url",
+            "kms_key_name": "",
+            "labels": {},
+            "location": "us-central1",
+            "name": "generate-signed-url",
+            "project": "digital-shadow-417907",
+            "service_config": [
+              {
+                "all_traffic_on_latest_revision": true,
+                "available_cpu": "0.1666",
+                "available_memory": "256M",
+                "environment_variables": {
+                  "BUCKET_NAME": "ai-starter-evaluation-bucket-9pguwa",
+                  "LOG_EXECUTION_ID": "true"
+                },
+                "gcf_uri": "",
+                "ingress_settings": "ALLOW_ALL",
+                "max_instance_count": 12,
+                "max_instance_request_concurrency": 1,
+                "min_instance_count": 0,
+                "secret_environment_variables": [],
+                "secret_volumes": [],
+                "service": "projects/digital-shadow-417907/locations/us-central1/services/generate-signed-url",
+                "service_account_email": "gemini-startup-evaluator@digital-shadow-417907.iam.gserviceaccount.com",
+                "timeout_seconds": 60,
+                "uri": "https://generate-signed-url-4jtjhrb72q-uc.a.run.app",
+                "vpc_connector": "",
+                "vpc_connector_egress_settings": ""
+              }
+            ],
+            "state": "ACTIVE",
+            "terraform_labels": {},
+            "timeouts": null,
+            "update_time": "2025-09-17T16:47:29.479415963Z",
+            "url": "https://us-central1-digital-shadow-417907.cloudfunctions.net/generate-signed-url"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozNjAwMDAwMDAwMDAwLCJkZWxldGUiOjM2MDAwMDAwMDAwMDAsInVwZGF0ZSI6MzYwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_project_service.enable_apis"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_cloudfunctions2_function",
+      "name": "process_document",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "build_config": [
+              {
+                "automatic_update_policy": [
+                  {}
+                ],
+                "build": "projects/617213468863/locations/us-central1/builds/5483fbef-f831-458a-b013-65c4d086366f",
+                "docker_repository": "",
+                "entry_point": "processDocument",
+                "environment_variables": {},
+                "on_deploy_update_policy": [],
+                "runtime": "nodejs18",
+                "service_account": "projects/digital-shadow-417907/serviceAccounts/617213468863-compute@developer.gserviceaccount.com",
+                "source": [
+                  {
+                    "repo_source": [],
+                    "storage_source": [
+                      {
+                        "bucket": "digital-shadow-function-source",
+                        "generation": 0,
+                        "object": "process-document.zip"
+                      }
+                    ]
+                  }
+                ],
+                "worker_pool": ""
+              }
+            ],
+            "description": "",
+            "effective_labels": {
+              "deployment-tool": "cli-gcloud",
+              "goog-terraform-provisioned": "true"
+            },
+            "environment": "GEN_1",
+            "event_trigger": [
+              {
+                "event_filters": [
+                  {
+                    "attribute": "resource",
+                    "operator": "",
+                    "value": "projects/_/buckets/ai-starter-evaluation-bucket-9pguwa"
+                  }
+                ],
+                "event_type": "google.storage.object.finalize",
+                "pubsub_topic": "",
+                "retry_policy": "RETRY_POLICY_DO_NOT_RETRY",
+                "service_account_email": "",
+                "trigger": "",
+                "trigger_region": ""
+              }
+            ],
+            "id": "projects/617213468863/locations/us-central1/functions/process-document",
+            "kms_key_name": "",
+            "labels": {},
+            "location": "us-central1",
+            "name": "process-document",
+            "project": "617213468863",
+            "service_config": [
+              {
+                "all_traffic_on_latest_revision": true,
+                "available_cpu": "",
+                "available_memory": "512M",
+                "environment_variables": {
+                  "GEMINI_API_KEY": "AIzaSyCmhFjXrfx8JmIZNC6joHeU3O_DBMmqrk"
+                },
+                "gcf_uri": "",
+                "ingress_settings": "ALLOW_ALL",
+                "max_instance_count": 3000,
+                "max_instance_request_concurrency": 1,
+                "min_instance_count": 0,
+                "secret_environment_variables": [],
+                "secret_volumes": [],
+                "service": "",
+                "service_account_email": "gemini-startup-evaluator@digital-shadow-417907.iam.gserviceaccount.com",
+                "timeout_seconds": 60,
+                "uri": "",
+                "vpc_connector": "",
+                "vpc_connector_egress_settings": ""
+              }
+            ],
+            "state": "ACTIVE",
+            "terraform_labels": {},
+            "timeouts": null,
+            "update_time": "2025-09-17T16:59:42.644501297Z",
+            "url": ""
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozNjAwMDAwMDAwMDAwLCJkZWxldGUiOjM2MDAwMDAwMDAwMDAsInVwZGF0ZSI6MzYwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_project_service.enable_apis"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_cloudfunctions2_function",
+      "name": "vectorize_deal_note",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "build_config": [
+              {
+                "automatic_update_policy": [
+                  {}
+                ],
+                "build": "projects/617213468863/locations/us-central1/builds/5e757622-27a9-45bf-a29b-b43f05a0593f",
+                "docker_repository": "",
+                "entry_point": "vectorizeDealNote",
+                "environment_variables": {},
+                "on_deploy_update_policy": [],
+                "runtime": "nodejs18",
+                "service_account": "projects/digital-shadow-417907/serviceAccounts/617213468863-compute@developer.gserviceaccount.com",
+                "source": [
+                  {
+                    "repo_source": [],
+                    "storage_source": [
+                      {
+                        "bucket": "digital-shadow-function-source",
+                        "generation": 0,
+                        "object": "vectorize-deal-note.zip"
+                      }
+                    ]
+                  }
+                ],
+                "worker_pool": ""
+              }
+            ],
+            "description": "",
+            "effective_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "environment": "GEN_1",
+            "event_trigger": [],
+            "id": "projects/617213468863/locations/us-central1/functions/vectorize-deal-note",
+            "kms_key_name": "",
+            "labels": {},
+            "location": "us-central1",
+            "name": "vectorize-deal-note",
+            "project": "617213468863",
+            "service_config": [
+              {
+                "all_traffic_on_latest_revision": false,
+                "available_cpu": "",
+                "available_memory": "256M",
+                "environment_variables": {
+                  "GEMINI_API_KEY": "AIzaSyCmhFjXrfx8JmIZNC6joHeU3O_DBMmqrk",
+                  "INDEX_ENDPOINT_ID": "deal-notes-index-endpoint",
+                  "LOCATION": "us-central1",
+                  "PROJECT_ID": "digital-shadow-417907"
+                },
+                "gcf_uri": "",
+                "ingress_settings": "ALLOW_ALL",
+                "max_instance_count": 0,
+                "max_instance_request_concurrency": 1,
+                "min_instance_count": 0,
+                "secret_environment_variables": [],
+                "secret_volumes": [],
+                "service": "",
+                "service_account_email": "gemini-startup-evaluator@digital-shadow-417907.iam.gserviceaccount.com",
+                "timeout_seconds": 60,
+                "uri": "https://us-central1-digital-shadow-417907.cloudfunctions.net/vectorize-deal-note",
+                "vpc_connector": "",
+                "vpc_connector_egress_settings": ""
+              }
+            ],
+            "state": "ACTIVE",
+            "terraform_labels": {},
+            "timeouts": null,
+            "update_time": "2025-09-17T16:59:40.035491510Z",
+            "url": "https://us-central1-digital-shadow-417907.cloudfunctions.net/vectorize-deal-note"
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "google_project_service.enable_apis"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_eventarc_trigger",
+      "name": "mcp_trigger",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": []
+    },
+    {
+      "mode": "managed",
+      "type": "google_project_service",
+      "name": "enable_apis",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "index_key": "aiplatform.googleapis.com",
+          "schema_version": 0,
+          "attributes": {
+            "disable_dependent_services": null,
+            "disable_on_destroy": false,
+            "id": "digital-shadow-417907/aiplatform.googleapis.com",
+            "project": "digital-shadow-417907",
+            "service": "aiplatform.googleapis.com",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjoxMjAwMDAwMDAwMDAwfX0="
+        },
+        {
+          "index_key": "cloudbuild.googleapis.com",
+          "schema_version": 0,
+          "attributes": {
+            "disable_dependent_services": null,
+            "disable_on_destroy": false,
+            "id": "digital-shadow-417907/cloudbuild.googleapis.com",
+            "project": "digital-shadow-417907",
+            "service": "cloudbuild.googleapis.com",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjoxMjAwMDAwMDAwMDAwfX0="
+        },
+        {
+          "index_key": "cloudfunctions.googleapis.com",
+          "schema_version": 0,
+          "attributes": {
+            "disable_dependent_services": null,
+            "disable_on_destroy": false,
+            "id": "digital-shadow-417907/cloudfunctions.googleapis.com",
+            "project": "digital-shadow-417907",
+            "service": "cloudfunctions.googleapis.com",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjoxMjAwMDAwMDAwMDAwfX0="
+        },
+        {
+          "index_key": "eventarc.googleapis.com",
+          "schema_version": 0,
+          "attributes": {
+            "disable_dependent_services": null,
+            "disable_on_destroy": false,
+            "id": "digital-shadow-417907/eventarc.googleapis.com",
+            "project": "digital-shadow-417907",
+            "service": "eventarc.googleapis.com",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjoxMjAwMDAwMDAwMDAwfX0="
+        },
+        {
+          "index_key": "firestore.googleapis.com",
+          "schema_version": 0,
+          "attributes": {
+            "disable_dependent_services": null,
+            "disable_on_destroy": false,
+            "id": "digital-shadow-417907/firestore.googleapis.com",
+            "project": "digital-shadow-417907",
+            "service": "firestore.googleapis.com",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjoxMjAwMDAwMDAwMDAwfX0="
+        },
+        {
+          "index_key": "iam.googleapis.com",
+          "schema_version": 0,
+          "attributes": {
+            "disable_dependent_services": null,
+            "disable_on_destroy": false,
+            "id": "digital-shadow-417907/iam.googleapis.com",
+            "project": "digital-shadow-417907",
+            "service": "iam.googleapis.com",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjoxMjAwMDAwMDAwMDAwfX0="
+        },
+        {
+          "index_key": "pubsub.googleapis.com",
+          "schema_version": 0,
+          "attributes": {
+            "disable_dependent_services": null,
+            "disable_on_destroy": false,
+            "id": "digital-shadow-417907/pubsub.googleapis.com",
+            "project": "digital-shadow-417907",
+            "service": "pubsub.googleapis.com",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjoxMjAwMDAwMDAwMDAwfX0="
+        },
+        {
+          "index_key": "run.googleapis.com",
+          "schema_version": 0,
+          "attributes": {
+            "disable_dependent_services": null,
+            "disable_on_destroy": false,
+            "id": "digital-shadow-417907/run.googleapis.com",
+            "project": "digital-shadow-417907",
+            "service": "run.googleapis.com",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjoxMjAwMDAwMDAwMDAwfX0="
+        },
+        {
+          "index_key": "workflows.googleapis.com",
+          "schema_version": 0,
+          "attributes": {
+            "disable_dependent_services": null,
+            "disable_on_destroy": false,
+            "id": "digital-shadow-417907/workflows.googleapis.com",
+            "project": "digital-shadow-417907",
+            "service": "workflows.googleapis.com",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjoxMjAwMDAwMDAwMDAwfX0="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_pubsub_topic",
+      "name": "new_document_topic",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "effective_labels": {},
+            "id": "projects/digital-shadow-417907/topics/new-document-ready",
+            "ingestion_data_source_settings": [],
+            "kms_key_name": "",
+            "labels": {},
+            "message_retention_duration": "",
+            "message_storage_policy": [],
+            "name": "new-document-ready",
+            "project": "digital-shadow-417907",
+            "schema_settings": [],
+            "terraform_labels": {},
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_project_service.enable_apis"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_workflows_workflow",
+      "name": "mcp_pipeline",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": []
+    }
+  ],
+  "check_results": null
+}
