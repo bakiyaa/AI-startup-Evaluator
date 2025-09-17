@@ -3,14 +3,14 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--surface-color);
 }
 
 .login-box {
-  background: white;
+  background: var(--background-color);
   padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  border-radius: var(--base-border-radius);
+  box-shadow: var(--card-shadow);
   text-align: center;
   width: 100%;
   max-width: 400px;
@@ -29,7 +29,7 @@
 
 .login-box input {
   padding: 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
 }
 
@@ -42,21 +42,21 @@
 }
 
 .login-btn {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
 }
 
 .divider {
   margin: 20px 0;
-  color: #888;
+  color: var(--secondary-text-color);
 }
 
 .google-btn {
-  background-color: #db4437;
-  color: white;
+  background-color: var(--danger-color);
+  color: var(--text-on-primary);
 }
 
 .error-message {
-  color: red;
+  color: var(--danger-color);
   margin-top: 10px;
 }

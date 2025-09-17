@@ -13,6 +13,7 @@ const InsightsWorkspace = () => {
   const [analysisStage, setAnalysisStage] = useState('initial'); // initial, needsApproval, formSent, finalReport
   const [analysisResults, setAnalysisResults] = useState(null);
   const [gapAnalysisQuestions, setGapAnalysisQuestions] = useState([]);
+  const [analysisMode, setAnalysisMode] = useState('filtered');
   const [activeTab, setActiveTab] = useState('summary');
 
   const handleAnalyze = async () => {
@@ -93,7 +94,7 @@ const InsightsWorkspace = () => {
 
   return (
     <div className="insights-workspace">
-      <Controls weights={weights} setWeights={setWeights} userComments={userComments} setUserComments={setUserComments} handleAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
+      <Controls weights={weights} setWeights={setWeights} userComments={userComments} setUserComments={setUserComments} handleAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} analysisMode={analysisMode} setAnalysisMode={setAnalysisMode} />
       <div className="results-panel card">
         {analysisStage === 'finalReport' && (
           <div className="tabs">

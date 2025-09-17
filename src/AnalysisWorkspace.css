@@ -5,9 +5,9 @@
 
 .left-panel {
   width: 40%;
-  padding: 20px;
+  padding: var(--base-padding);
   overflow-y: auto;
-  border-right: 1px solid #ddd;
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -15,7 +15,7 @@
 
 .right-panel {
   width: 60%;
-  padding: 20px;
+  padding: var(--base-padding);
   overflow-y: auto;
   display: flex;
   flex-direction: column;

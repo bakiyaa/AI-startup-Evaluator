@@ -1,67 +1,52 @@
-import React, { useState } from 'react';
+import React from 'react';
 import './InsightDashboard.css';
-import Benchmarking from './Benchmarking';
 import ExecutiveSummary from './ExecutiveSummary';
-import PeerGroup from './PeerGroup';
+import RiskAnalysis from './RiskAnalysis';
+import Benchmarking from './Benchmarking';
 
-const InsightDashboard = ({
-  isAnalyzing,
-  analysisStage,
-  analysisResults,
-  gapAnalysisQuestions,
-  handleSendForm,
-  handleAnalyzeAnyway,
-  peerGroup
-}) => {
-  const [activeTab, setActiveTab] = useState('summary');
+const InsightDashboard = ({ isAnalyzing, analysisStage, analysisResults, gapAnalysisQuestions, handleSendForm, handleAnalyzeAnyway }) => {
 
   const renderContent = () => {
-    if (isAnalyzing) return <div className="spinner"></div>;
+    if (isAnalyzing && analysisStage !== 'formSent') {
+      return <div className="loading-spinner">Analyzing...</div>; // Use a class for styling
+    }
 
     switch (analysisStage) {
       case 'needsApproval':
         return (
-          <div className="gap-analysis-approval">
+          <div className="gap-analysis-approval card">
             <h4>AI Gap Analysis Complete</h4>
             <p>The AI has identified missing information. For a more accurate analysis, we recommend requesting these details from the founder.</p>
-            <ul>
+            <ul className="gap-questions">
               {gapAnalysisQuestions.map((q, i) => <li key={i}>{q}</li>)}
             </ul>
             <div className="approval-actions">
-              <button onClick={handleSendForm} className="action-button primary-action">Approve & Send Form</button>
-              <button onClick={handleAnalyzeAnyway} className="action-button">Analyze with Existing Data</button>
+              <button onClick={handleSendForm} className="action-button primary-action">Send Google Form</button>
+              <button onClick={() => alert('AI Voice Call feature coming soon!')} className="action-button">Schedule AI Voice Call</button>
+              <button onClick={handleAnalyzeAnyway} className="action-button secondary-action">Analyze with Existing Data</button>
             </div>
           </div>
         );
       case 'formSent':
-        return <p>Form has been sent. Waiting for response before completing final analysis...</p>;
+        return <div className="card"><p>Form has been sent. Waiting for founder to respond before completing final analysis...</p></div>;
       case 'finalReport':
-        if (!analysisResults) return <p>Something went wrong.</p>;
-        switch (activeTab) {
-          case 'summary': return <ExecutiveSummary summary={analysisResults.summary} suggestions={analysisResults.suggestions} />;
-          case 'peer-group': return <PeerGroup peers={peerGroup} />;
-          case 'benchmarking': return <Benchmarking benchmarkData={analysisResults.benchmarks} />;
-          default: return null;
-        }
+        if (!analysisResults) return <div className="card"><p>Something went wrong during the analysis.</p></div>;
+        // In a real app, you would have tabs here to switch between different report sections
+        return (
+          <div>
+            <ExecutiveSummary summary={analysisResults.summary} />
+            {/* You would add other components like RiskAnalysis, Benchmarking here, perhaps in their own cards */}
+          </div>
+        );
       case 'initial':
       default:
-        return <p>Click "Generate Insights" to start the analysis.</p>;
+        return <div className="card"><p>Click "Generate Insights" in the Analysis Workspace to start.</p></div>;
     }
   };
 
   return (
-    <div className="insight-dashboard card">
-      <h3>Insight Dashboard</h3>
-      {analysisStage === 'finalReport' && (
-        <div className="tabs">
-          <button onClick={() => setActiveTab('summary')} className={activeTab === 'summary' ? 'active' : ''}>Summary</button>
-          <button onClick={() => setActiveTab('peer-group')} className={activeTab === 'peer-group' ? 'active' : ''}>Peer Group</button>
-          <button onClick={() => setActiveTab('benchmarking')} className={activeTab === 'benchmarking' ? 'active' : ''}>Benchmarking</button>
-        </div>
-      )}
-      <div className="tab-content">
-        {renderContent()}
-      </div>
+    <div className="insight-dashboard">
+      {renderContent()}
     </div>
   );
 };

@@ -1,7 +1,7 @@
 .data-room {
   flex: 1;
-  background-color: white;
+  background-color: var(--background-color);
   padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-radius: var(--base-border-radius);
+  box-shadow: var(--card-shadow);
 }

@@ -1,1 +1,9 @@
-/* Keep this file for any global app styles if needed in the future */
+.app-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  background-color: var(--surface-color);
+}
+
+.main-content {
+  padding: 1.5rem 2rem;
+}

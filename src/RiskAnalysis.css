@@ -7,18 +7,18 @@
 
 .risk-item {
     padding: 8px;
-    border-left: 4px solid #ccc;
+    border-left: 4px solid var(--border-color);
     margin-bottom: 8px;
 }
 
 .risk-item.severity-high {
-    border-left-color: #dc3545; /* red */
+    border-left-color: var(--danger-color);
 }
 
 .risk-item.severity-medium {
-    border-left-color: #ffc107; /* yellow */
+    border-left-color: var(--warning-color);
 }
 
 .risk-item.severity-low {
-    border-left-color: #28a745; /* green */
+    border-left-color: var(--success-color);
 }

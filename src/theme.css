@@ -1,0 +1,61 @@
+/*
+ * Central Theme File
+ * ------------------
+ * This file contains CSS custom properties (variables) that define the color scheme,
+ * typography, and other global style values for the application.
+ *
+ * To change the theme, you can:
+ * 1. Modify the values in the default :root selector for a new light theme.
+ * 2. Uncomment the [data-theme='dark'] block and set the `data-theme` attribute
+ *    on the <html> element to 'dark' to enable the dark theme.
+ */
+
+:root {
+  /* Color Palette */
+  --primary-color: #007bff;
+  --primary-color-hover: #0056b3;
+  --accent-color: #0d6efd;
+  --background-color: #ffffff;
+  --surface-color: #f8f9fa; /* For cards, headers, etc. */
+  --border-color: #dee2e6;
+
+  /* Text */
+  --primary-text-color: #212529;
+  --secondary-text-color: #6c757d;
+  --text-on-primary: #ffffff;
+
+  /* Status Colors */
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --info-color: #0dcaf0;
+
+  /* Typography */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --font-family-monospace: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --base-font-size: 14px;
+
+  /* Spacing & Layout */
+  --base-padding: 20px;
+  --base-border-radius: 8px;
+  --card-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/*
+ * Dark Theme (Optional)
+ * To enable, set data-theme="dark" on the root <html> element.
+ */
+/*
+[data-theme='dark'] {
+  --primary-color: #0d6efd;
+  --primary-color-hover: #0a58ca;
+  --accent-color: #3b82f6;
+  --background-color: #212529;
+  --surface-color: #343a40;
+  --border-color: #495057;
+
+  --primary-text-color: #f8f9fa;
+  --secondary-text-color: #adb5bd;
+  --text-on-primary: #ffffff;
+}
+*/

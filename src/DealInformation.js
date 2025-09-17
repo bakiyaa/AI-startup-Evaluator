@@ -101,17 +101,25 @@ const DealInformation = ({ handleFindPeerGroup, filters, handleFilterChange, onD
         <label><input type="radio" name="revenue" value="pre" /> Pre-Revenue</label>
         <label><input type="radio" name="revenue" value="post" defaultChecked /> Post-Revenue</label>
       </div>
-      <select 
-        className="text-input" 
-        name="stage" 
-        value={filters.stage || ''} 
-        onChange={handleFilterChange}
-      >
-        <option value="">Select Stage</option>
-        <option value="seed">Seed</option>
-        <option value="series-a">Series A</option>
-      </select>
-      
+
+      <select
+  className="text-input" 
+  name="stage" 
+  value={filters.stage || ''} 
+  onChange={handleFilterChange}
+>
+  <option value="">Select Stage</option>
+  <option value="pre-seed">Pre-Seed</option>
+  <option value="seed">Seed</option>
+  <option value="series-a">Series A</option>
+  <option value="series-b">Series B</option>
+  <option value="series-c">Series C</option>
+  <option value="growth">Growth Stage</option>
+  <option value="late">Late Stage</option>
+  <option value="ipo">IPO</option>
+  <option value="acquisition">Acquisition</option>
+</select>
+   
       <input 
         type="text" 
         className="text-input" 
@@ -119,16 +127,7 @@ const DealInformation = ({ handleFindPeerGroup, filters, handleFilterChange, onD
         value={domain} 
         onChange={(e) => { setDomain(e.target.value); onDomainChange(e.target.value); }}
       />
-
-      <h4>Search Filters (for Vertex AI)</h4>
-      <div className="filter-group">
-        <label htmlFor="keywords">Keywords</label>
-        <input type="text" id="keywords" name="keywords" value={filters.keywords} onChange={handleFilterChange} placeholder="e.g., 'B2B SaaS', 'Fintech'" />
-      </div>
       
-      
-      <button onClick={handleFindPeerGroup} className="action-button">Find Peer Group</button>
-
     </div>
   );
 };

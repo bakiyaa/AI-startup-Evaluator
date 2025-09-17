@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import './Controls.css';
+import ToggleSwitch from './ToggleSwitch';
 
 const Controls = ({ weights, setWeights, userComments, setUserComments, handleAnalyze, isAnalyzing, analysisMode, setAnalysisMode }) => {
   const textareaRef = useRef(null);
@@ -53,7 +54,14 @@ const Controls = ({ weights, setWeights, userComments, setUserComments, handleAn
 
   return (
     <div className="controls card">
-      <h3>Controls & Investor Preferences</h3>
+      <div className="controls-header">
+        <h3>Controls & Investor Preferences</h3>
+        <ToggleSwitch 
+          label={analysisMode === 'semantic' ? 'Semantic Search' : 'Filtered Search'}
+          isToggled={analysisMode === 'semantic'}
+          handleToggle={() => setAnalysisMode(analysisMode === 'semantic' ? 'filtered' : 'semantic')}
+        />
+      </div>
 
       <div className="weighting-section">
         <h4>Custom Weighting</h4>
@@ -114,27 +122,6 @@ const Controls = ({ weights, setWeights, userComments, setUserComments, handleAn
           value={userComments}
           onChange={(e) => setUserComments(e.target.value)}
         ></textarea>
-      </div>
-
-      <div className="analysis-mode">
-        <label>
-          <input 
-            type="radio" 
-            value="semantic" 
-            checked={analysisMode === 'semantic'} 
-            onChange={() => setAnalysisMode('semantic')}
-          />
-          Semantic Search
-        </label>
-        <label>
-          <input 
-            type="radio" 
-            value="filtered" 
-            checked={analysisMode === 'filtered'} 
-            onChange={() => setAnalysisMode('filtered')}
-          />
-          Filtered Search
-        </label>
       </div>
 
       <button onClick={handleAnalyze} disabled={isAnalyzing || totalWeight !== 100} className="action-button">
