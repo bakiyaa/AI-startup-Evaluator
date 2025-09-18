@@ -1,2 +1,0 @@
-#!/bin/bash
-gcloud functions deploy process-document --gen2 --runtime nodejs20 --region us-central1 --source functions --entry-point process-document --trigger-event-filters="type=google.cloud.storage.object.v1.finalized" --trigger-event-filters="bucket=ai-starter-evaluation-bucket" --service-account 248362160566-compute@developer.gserviceaccount.com --set-env-vars GEMINI_API_KEY=AIzaSyCmhFjXrfx8JmIZNC6joHeU3O_DBMmqrk

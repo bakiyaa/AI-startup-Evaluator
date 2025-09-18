@@ -42,7 +42,7 @@ resource "google_cloudfunctions2_function" "generate_signed_url" {
   location = var.region
 
   build_config {
-    runtime     = "nodejs18"
+    runtime     = "nodejs20"
     entry_point = "generateSignedUrl"
     source {
       storage_source {
@@ -268,4 +268,10 @@ resource "google_project_iam_member" "allow_gcs_to_publish_to_pubsub" {
   project = var.project_id
   role    = "roles/pubsub.publisher"
   member  = "serviceAccount:service-617213468863@gs-project-accounts.iam.gserviceaccount.com"
+}
+
+resource "google_service_account_iam_member" "allow_self_to_sign_blobs" {
+  service_account_id = "projects/${var.project_id}/serviceAccounts/${var.service_account_email}"
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${var.service_account_email}"
 }
