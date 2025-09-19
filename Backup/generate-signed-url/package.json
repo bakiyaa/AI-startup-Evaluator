@@ -1,0 +1,9 @@
+{
+  "name": "generate-signed-url",
+  "version": "1.0.0",
+  "description": "Generates a signed URL for file uploads.",
+  "main": "index.js",
+  "dependencies": {
+    "@google-cloud/storage": "^7.0.0"
+  }
+}

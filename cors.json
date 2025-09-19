@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["http://localhost:3001", "http://localhost:5000", "https://digital-shadow-417907.web.app", "https://3001-cs-fe8021ec-ca40-4e02-b82d-110cbd285ad1.cs-asia-southeast1-bool.cloudshell.dev"],
+    "method": ["GET", "PUT", "POST", "DELETE"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 3600
+  }
+]
