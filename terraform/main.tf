@@ -39,9 +39,15 @@ resource "google_firestore_database" "database" {
   depends_on = [google_project_service.enable_apis]
 }
 
+resource "google_pubsub_topic" "data_ingestion_topic" {
+  project = var.project_id
+  name    = "dataingestionTopic"
+  depends_on = [google_project_service.enable_apis]
+}
+
 # 1. The Pub/Sub topic for downstream notifications
 resource "google_pubsub_topic" "new_document_topic" {
-  name = "new-document-ready"
+  name = "DownStreamAnalysis"
   depends_on = [google_project_service.enable_apis]
 }
 
@@ -130,7 +136,7 @@ resource "google_cloudfunctions2_function" "vectorize_deal_note" {
     }
     event_filters {
       attribute = "document"
-      value     = "processed_documents/{docId}"
+      value     = "startupanalyses/{docId}"
     }
   }
 
@@ -150,10 +156,10 @@ resource "google_workflows_workflow" "mcp_pipeline" {
 main:
     params: [event]
     steps:
-      - init:
+      - decode_pubsub_message:
           assign:
-            - file_info: $${event.data}
-      - call_process_document_function:
+            - file_info: $${json.decode(base64.decode(event.data.message.data))}
+      - call_process_document:
           try:
             call: http.post
             args:
@@ -168,19 +174,27 @@ main:
           except:
             as: e
             raise: e
-      - final_step:
-          return: $${call_response.body}
+      - return_success:
+          return: "Workflow successfully triggered process-document function."
   EOT
 
   depends_on = [
     google_project_service.enable_apis,
-    google_pubsub_topic.new_document_topic,
     google_cloudfunctions2_function.process_document,
     google_firestore_database.database
   ]
 }
 
-# 4. The Eventarc trigger to connect the bucket to the workflow
+# 4. GCS notification to send events to Pub/Sub
+resource "google_storage_notification" "gcs_notification" {
+  bucket         = var.bucket_name
+  topic          = google_pubsub_topic.data_ingestion_topic.id
+  payload_format = "JSON_API_V1"
+  event_types    = ["OBJECT_FINALIZE"]
+  depends_on     = [google_pubsub_topic.data_ingestion_topic]
+}
+
+# 5. The Eventarc trigger to connect the Pub/Sub topic to the workflow
 resource "google_eventarc_trigger" "mcp_trigger" {
   name            = "mcp-pipeline-trigger"
   location        = var.region
@@ -188,23 +202,27 @@ resource "google_eventarc_trigger" "mcp_trigger" {
 
   matching_criteria {
     attribute = "type"
-    value     = "google.cloud.storage.object.v1.finalized"
-  }
-
-  matching_criteria {
-    attribute = "bucket"
-    value     = var.bucket_name
+    value     = "google.cloud.pubsub.topic.v1.messagePublished"
   }
 
   destination {
     workflow = google_workflows_workflow.mcp_pipeline.id
   }
 
+  transport {
+    pubsub {
+      topic = google_pubsub_topic.data_ingestion_topic.id
+    }
+  }
+
   service_account = var.service_account_email
   depends_on = [google_project_service.enable_apis]
 }
+data "google_storage_project_service_account" "gcs_account" {
+  project = var.project_id
+}
 
-# 5. IAM bindings to allow invocation
+# 6. IAM bindings to allow invocation
 resource "google_cloud_run_service_iam_member" "make_public" {
   location = google_cloudfunctions2_function.generate_signed_url.location
   service  = google_cloudfunctions2_function.generate_signed_url.name
@@ -212,7 +230,6 @@ resource "google_cloud_run_service_iam_member" "make_public" {
   member   = "allUsers"
   depends_on = [google_project_service.enable_apis]
 }
-
 resource "google_cloud_run_service_iam_member" "allow_workflow_to_invoke_process_document" {
   location = google_cloudfunctions2_function.process_document.location
   service  = google_cloudfunctions2_function.process_document.name
@@ -220,19 +237,17 @@ resource "google_cloud_run_service_iam_member" "allow_workflow_to_invoke_process
   member   = "serviceAccount:${var.service_account_email}"
   depends_on = [google_project_service.enable_apis, google_cloudfunctions2_function.process_document]
 }
-
 resource "google_storage_bucket_iam_member" "allow_eventarc_to_read_bucket" {
   bucket = var.bucket_name
   role   = "roles/storage.objectViewer"
   member = "serviceAccount:${var.service_account_email}"
 }
-
-resource "google_project_iam_member" "allow_gcs_to_publish_to_pubsub" {
+resource "google_pubsub_topic_iam_member" "gcs_pubsub_publisher" {
   project = var.project_id
+  topic   = google_pubsub_topic.data_ingestion_topic.name
   role    = "roles/pubsub.publisher"
-  member  = "serviceAccount:service-617213468863@gs-project-accounts.iam.gserviceaccount.com"
+  member  = "serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"
 }
-
 resource "google_service_account_iam_member" "allow_self_to_sign_blobs" {
   service_account_id = "projects/${var.project_id}/serviceAccounts/${var.service_account_email}"
   role               = "roles/iam.serviceAccountTokenCreator"

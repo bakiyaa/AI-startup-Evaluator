@@ -14,7 +14,7 @@ async function getApiKey() {
 exports.vectorizeDealNote = async (cloudevent) => {
   const { value } = cloudevent.data;
   const { extractedText } = value.fields;
-  const documentId = cloudevent.document;
+  const documentId = cloudevent.params.docId;
 
   if (!extractedText || !extractedText.stringValue) {
     console.log('No extractedText found in the document.');
@@ -32,7 +32,7 @@ exports.vectorizeDealNote = async (cloudevent) => {
     const embedding = result.embedding;
     console.log('Successfully generated embedding.');
 
-    const topic = pubsub.topic('new-document-ready');
+    const topic = pubsub.topic('DownStreamAnalysis');
     const message = {
       attributes: {
         documentId: documentId,
