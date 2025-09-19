@@ -1,12 +1,15 @@
 const { Storage } = require('@google-cloud/storage');
 const { ImageAnnotatorClient } = require('@google-cloud/vision');
 const { SpeechClient } = require('@google-cloud/speech');
-const { Firestore } = require('@google-cloud/firestore'); // For Firestore
+const { Firestore } = require('@google-cloud/firestore');
 const { VideoIntelligenceServiceClient } = require('@google-cloud/video-intelligence');
 const mammoth = require('mammoth');
 const pptxParser = require('node-pptx-parser');
 const xlsx = require('xlsx');
-
+const { htmlToText } = require('html-to-text');
+const odtParser = require('odt-parser');
+const fs = require('fs').promises;
+const path = require('path');
 
 const storage = new Storage();
 const visionClient = new ImageAnnotatorClient();
@@ -27,7 +30,6 @@ function chunkString(str, size) {
 exports.processDocument = async (req, res) => {
     try {
         const { bucketName, fileName, contentType } = req.body;
-        // Corrected validation: Check for all required fields.
         if (!bucketName || !fileName || !contentType) {
             return res.status(400).send('Missing bucketName, fileName, or contentType in request body.');
         }
@@ -64,25 +66,17 @@ exports.processDocument = async (req, res) => {
             console.log('Image OCR complete.');
         } else if (contentType.startsWith('audio/')) {
             console.log('Processing audio with Speech-to-Text API...');
-            
-            // Corrected audio configuration
             const config = {
                 languageCode: 'en-US',
                 enableAutomaticPunctuation: true,
             };
 
-            // For formats like MP3, FLAC, etc., the API can infer the encoding.
-            // For raw formats like LINEAR16 (often in WAV), it must be specified.
-            if (contentType === 'audio/wav' || contentType === 'audio/l16') {
+            // Let the API infer the encoding for most formats.
+            // Only specify for raw formats that require it.
+            if (contentType === 'audio/l16') {
                 config.encoding = 'LINEAR16';
-                // Note: sampleRateHertz is required for LINEAR16. 16000 is a common rate,
-                // but might be incorrect for some files. For higher accuracy, you may
-                // need a tool to extract the sample rate from the audio file header.
-                config.sampleRateHertz = 16000;
-            } else if (contentType === 'audio/mpeg') {
-                config.encoding = 'MP3';
-            } // Add other specific types if needed, otherwise let the API infer.
-
+                config.sampleRateHertz = 16000; // Note: This is an assumption
+            }
 
             const [operation] = await speechClient.longRunningRecognize({
                 config: config,
@@ -112,6 +106,11 @@ exports.processDocument = async (req, res) => {
                 ).join('\n');
             }
             console.log('Video transcription complete.');
+        } else if (contentType === 'text/html') {
+            console.log('Handling HTML file...');
+            const textContent = fileContent.toString('utf8');
+            extractedText = htmlToText(textContent, { wordwrap: false });
+            console.log('HTML processing complete.');
         } else if (contentType.startsWith('text/')) {
             console.log('Handling text file...');
             extractedText = fileContent.toString('utf8');
@@ -122,9 +121,16 @@ exports.processDocument = async (req, res) => {
             console.log('DOCX processing complete.');
         } else if (contentType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
             console.log('Processing PPTX with node-pptx-parser...');
-            const result = await pptxParser.extract(fileContent);
+            const result = await pptxParser(fileContent); // Corrected usage
             extractedText = result.text;
             console.log('PPTX processing complete.');
+        } else if (contentType === 'application/vnd.oasis.opendocument.text') {
+            console.log('Processing ODT file...');
+            const tempFilePath = path.join('/tmp', fileName);
+            await fs.writeFile(tempFilePath, fileContent);
+            extractedText = await odtParser.extractText(tempFilePath);
+            await fs.unlink(tempFilePath); // Clean up temp file
+            console.log('ODT processing complete.');
         } else if (contentType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
             console.log('Processing XLSX with xlsx...');
             const workbook = xlsx.read(fileContent, { type: 'buffer' });
@@ -136,9 +142,7 @@ exports.processDocument = async (req, res) => {
             console.log('Unsupported content type, skipping:', contentType);
         }
 
-        // Re-introduced Firestore logic from user's original code, with corrections.
         if (extractedText && extractedText.trim()) {
-            // Corrected: Robust startupId generation
             const startupId = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
             const mainDocRef = firestore.collection('startupAnalyses').doc(startupId);
 
@@ -149,7 +153,7 @@ exports.processDocument = async (req, res) => {
             const batch = firestore.batch();
 
             textChunks.forEach((chunk, index) => {
-                const chunkDocRef = mainDocRef.collection('textChunks').doc(); // Firestore auto-generates ID
+                const chunkDocRef = mainDocRef.collection('textChunks').doc();
                 chunkIds.push(chunkDocRef.id);
 
                 batch.set(chunkDocRef, {
@@ -172,15 +176,13 @@ exports.processDocument = async (req, res) => {
             await batch.commit();
             console.log(`Extracted text stored in ${textChunks.length} chunks for startupId: ${startupId}.`);
             
-            // Corrected: Send a JSON response instead of the full text.
-            res.status(200).json({ 
+            res.status(200).json({
                 message: 'Document processed and stored successfully.', 
                 startupId: startupId,
                 chunks: chunkIds.length
             });
 
         } else {
-            // Corrected: Clearer message when no text is extracted.
             console.log('No text could be extracted from the document.');
             res.status(400).send('No text could be extracted from the document.');
         }

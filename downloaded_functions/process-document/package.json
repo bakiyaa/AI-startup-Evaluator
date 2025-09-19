@@ -8,9 +8,11 @@
     "@google-cloud/vision": "^4.0.0",
     "@google-cloud/speech": "^6.0.0",
     "@google-cloud/video-intelligence": "^5.0.0",
+    "@google-cloud/firestore": "^7.0.0",
     "mammoth": "^1.6.0",
     "node-pptx-parser": "^1.0.0",
     "xlsx": "^0.18.5",
-    "@google-cloud/firestore": "^7.0.0"
+    "html-to-text": "^9.0.5",
+    "odt-parser": "^1.1.1"
   }
 }
