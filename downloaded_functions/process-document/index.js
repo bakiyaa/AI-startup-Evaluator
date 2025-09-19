@@ -1,62 +1,47 @@
-const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const { Storage } = require('@google-cloud/storage');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { ImageAnnotatorClient } = require('@google-cloud/vision'); // For PDF OCR
-const { SpeechClient } = require('@google-cloud/speech'); // For audio
-const { VideoIntelligenceServiceClient } = require('@google-cloud/video-intelligence'); // For video
+const { ImageAnnotatorClient } = require('@google-cloud/vision');
+const { SpeechClient } = require('@google-cloud/speech');
 const { Firestore } = require('@google-cloud/firestore'); // For Firestore
-const { BigQuery } = require('@google-cloud/bigquery'); // For BigQuery
-const mammoth = require('mammoth'); // For DOCX processing
+const { VideoIntelligenceServiceClient } = require('@google-cloud/video-intelligence');
+const mammoth = require('mammoth');
+const pptxParser = require('node-pptx-parser');
+const xlsx = require('xlsx');
 
-const secretManagerClient = new SecretManagerServiceClient();
+
 const storage = new Storage();
 const visionClient = new ImageAnnotatorClient();
 const speechClient = new SpeechClient();
-const videoIntelligenceClient = new VideoIntelligenceServiceClient();
 const firestore = new Firestore();
-const bigquery = new BigQuery();
+const videoIntelligenceClient = new VideoIntelligenceServiceClient();
 
-// Helper function to retrieve secret from Secret Manager
-async function getSecret(secretName) {
-    const [version] = await secretManagerClient.accessSecretVersion({
-        name: `projects/${process.env.GCP_PROJECT_ID}/secrets/${secretName}/versions/latest`,
-    });
-    return version.payload.data.toString('utf8');
+// Helper function to chunk large strings
+function chunkString(str, size) {
+    const numChunks = Math.ceil(str.length / size);
+    const chunks = new Array(numChunks);
+    for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
+        chunks[i] = str.substring(o, o + size);
+    }
+    return chunks;
 }
 
-/**
- * Processes uploaded documents (PDFs, audio, video) from a Cloud Storage bucket.
- * Triggered by a Cloud Storage object finalization event.
- *
- * @param {object} cloudEvent The Cloud Storage event.
- */
-exports.processDocument = async (cloudEvent) => {
-    const file = cloudEvent.data;
-    const bucketName = file.bucket;
-    const fileName = file.name;
-    const contentType = file.contentType;
-
-    console.log(`Processing file: ${fileName} from bucket: ${bucketName} with content type: ${contentType}`);
-
+exports.processDocument = async (req, res) => {
     try {
-        // Retrieve Gemini API Key from Secret Manager
-        const geminiApiKey = await getSecret(process.env.GEMINI_API_SECRET_NAME);
-        console.log('Gemini API Key (first 5 chars):', geminiApiKey.substring(0, 5));
+        const { bucketName, fileName, contentType } = req.body;
+        // Corrected validation: Check for all required fields.
+        if (!bucketName || !fileName || !contentType) {
+            return res.status(400).send('Missing bucketName, fileName, or contentType in request body.');
+        }
 
-        // Initialize Gemini API
-        const genAI = new GoogleGenerativeAI(geminiApiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        console.log(`Processing file: ${fileName} from bucket: ${bucketName} with content type: ${contentType}`);
 
-        // Download the file
         const fileBuffer = await storage.bucket(bucketName).file(fileName).download();
         const fileContent = fileBuffer[0];
 
         let extractedText = '';
+        const gcsUri = `gs://${bucketName}/${fileName}`;
 
-        // Basic content type handling (expand as needed)
         if (contentType === 'application/pdf') {
             console.log('Processing PDF with Vision API for OCR...');
-            const gcsUri = `gs://${bucketName}/${fileName}`;
             const [result] = await visionClient.asyncBatchAnnotateFiles({
                 requests: [{
                     inputConfig: {
@@ -66,22 +51,41 @@ exports.processDocument = async (cloudEvent) => {
                     features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
                 }],
             });
-            // Assuming a single response for simplicity, adjust for multiple files/pages
             if (result.responses && result.responses.length > 0 && result.responses[0].fullTextAnnotation) {
                 extractedText = result.responses[0].fullTextAnnotation.text;
-            } else {
-                console.log('No text found in PDF or unexpected Vision API response.');
             }
             console.log('PDF OCR complete.');
+        } else if (contentType.startsWith('image/')) {
+            console.log('Processing image with Vision API for OCR...');
+            const [result] = await visionClient.textDetection(fileContent);
+            if (result.fullTextAnnotation) {
+                extractedText = result.fullTextAnnotation.text;
+            }
+            console.log('Image OCR complete.');
         } else if (contentType.startsWith('audio/')) {
             console.log('Processing audio with Speech-to-Text API...');
-            const gcsUri = `gs://${bucketName}/${fileName}`;
+            
+            // Corrected audio configuration
+            const config = {
+                languageCode: 'en-US',
+                enableAutomaticPunctuation: true,
+            };
+
+            // For formats like MP3, FLAC, etc., the API can infer the encoding.
+            // For raw formats like LINEAR16 (often in WAV), it must be specified.
+            if (contentType === 'audio/wav' || contentType === 'audio/l16') {
+                config.encoding = 'LINEAR16';
+                // Note: sampleRateHertz is required for LINEAR16. 16000 is a common rate,
+                // but might be incorrect for some files. For higher accuracy, you may
+                // need a tool to extract the sample rate from the audio file header.
+                config.sampleRateHertz = 16000;
+            } else if (contentType === 'audio/mpeg') {
+                config.encoding = 'MP3';
+            } // Add other specific types if needed, otherwise let the API infer.
+
+
             const [operation] = await speechClient.longRunningRecognize({
-                config: {
-                    encoding: 'LINEAR16', // Adjust based on actual audio encoding
-                    sampleRateHertz: 16000, // Adjust based on actual sample rate
-                    languageCode: 'en-US',
-                },
+                config: config,
                 audio: {
                     uri: gcsUri,
                 },
@@ -91,7 +95,6 @@ exports.processDocument = async (cloudEvent) => {
             console.log('Audio transcription complete.');
         } else if (contentType.startsWith('video/')) {
             console.log('Processing video with Video Intelligence API for transcription...');
-            const gcsUri = `gs://${bucketName}/${fileName}`;
             const [operation] = await videoIntelligenceClient.annotateVideo({
                 inputUri: gcsUri,
                 features: ['SPEECH_TRANSCRIPTION'],
@@ -103,9 +106,11 @@ exports.processDocument = async (cloudEvent) => {
                 },
             });
             const [response] = await operation.promise();
-            extractedText = response.annotationResults[0].speechTranscriptions.map(transcription =>
-                transcription.alternatives[0].transcript
-            ).join('\n');
+            if (response.annotationResults[0] && response.annotationResults[0].speechTranscriptions) {
+                extractedText = response.annotationResults[0].speechTranscriptions.map(transcription =>
+                    transcription.alternatives[0].transcript
+                ).join('\n');
+            }
             console.log('Video transcription complete.');
         } else if (contentType.startsWith('text/')) {
             console.log('Handling text file...');
@@ -113,54 +118,75 @@ exports.processDocument = async (cloudEvent) => {
         } else if (contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
             console.log('Processing DOCX with Mammoth...');
             const result = await mammoth.extractRawText({ buffer: fileContent });
-            extractedText = result.value; // The raw text
+            extractedText = result.value;
             console.log('DOCX processing complete.');
+        } else if (contentType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+            console.log('Processing PPTX with node-pptx-parser...');
+            const result = await pptxParser.extract(fileContent);
+            extractedText = result.text;
+            console.log('PPTX processing complete.');
+        } else if (contentType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+            console.log('Processing XLSX with xlsx...');
+            const workbook = xlsx.read(fileContent, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            extractedText = xlsx.utils.sheet_to_csv(worksheet);
+			console.log('XLSX processing complete.');
         } else {
             console.log('Unsupported content type, skipping:', contentType);
-            return;
         }
 
-        if (extractedText) {
-            console.log('Feeding extracted text to Gemini for analysis...');
-            const prompt = `Analyze the following text from a startup document and extract key insights, potential risks, and a brief summary:\n\n${extractedText.substring(0, 2000)}...`; // Limit text for prompt
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const text = response.text();
-            console.log('Gemini Analysis Result:', text);
+        // Re-introduced Firestore logic from user's original code, with corrections.
+        if (extractedText && extractedText.trim()) {
+            // Corrected: Robust startupId generation
+            const startupId = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+            const mainDocRef = firestore.collection('startupAnalyses').doc(startupId);
 
-            // Store results in Firestore
-            const startupId = fileName.split('.')[0]; // Simple ID for now
-            const docRef = firestore.collection('startupAnalyses').doc(startupId);
-            await docRef.set({
+            const chunkSize = 500 * 1024; // 500KB per chunk
+            const textChunks = chunkString(extractedText, chunkSize);
+
+            const chunkIds = [];
+            const batch = firestore.batch();
+
+            textChunks.forEach((chunk, index) => {
+                const chunkDocRef = mainDocRef.collection('textChunks').doc(); // Firestore auto-generates ID
+                chunkIds.push(chunkDocRef.id);
+
+                batch.set(chunkDocRef, {
+                    order: index,
+                    content: chunk,
+                    timestamp: Firestore.FieldValue.serverTimestamp()
+                });
+            });
+
+            await batch.set(mainDocRef, {
                 fileName: fileName,
                 bucketName: bucketName,
                 contentType: contentType,
-                extractedText: extractedText.substring(0, 10000), // Store a portion
-                geminiAnalysis: text, // Raw Gemini output
+                geminiAnalysis: '',
                 timestamp: Firestore.FieldValue.serverTimestamp(),
+                textChunkIds: chunkIds,
+                numberOfTextChunks: chunkIds.length,
+            }, { merge: true });
+
+            await batch.commit();
+            console.log(`Extracted text stored in ${textChunks.length} chunks for startupId: ${startupId}.`);
+            
+            // Corrected: Send a JSON response instead of the full text.
+            res.status(200).json({ 
+                message: 'Document processed and stored successfully.', 
+                startupId: startupId,
+                chunks: chunkIds.length
             });
-            console.log('Analysis results stored in Firestore.');
 
-            // Store structured data in BigQuery (assuming Gemini output can be parsed)
-            const datasetId = process.env.BIGQUERY_DATASET_ID || 'startup_kpis';
-            const tableId = process.env.BIGQUERY_PUBLIC_DATA_TABLE_ID || 'public_data';
-            const table = bigquery.dataset(datasetId).table(tableId);
-
-            // Placeholder for parsing Gemini output into BigQuery schema
-            const parsedGeminiOutput = { /* Parse 'text' into your BigQuery schema */ };
-
-            const rows = [{
-                startup_name: startupId,
-                // ... populate other fields from parsedGeminiOutput ...
-                urls: [`gs://${bucketName}/${fileName}`],
-                // Example: founder_market_fit_score: parsedGeminiOutput.founder_market_fit_score,
-            }];
-            await table.insert(rows);
-            console.log('Structured data stored in BigQuery.');
+        } else {
+            // Corrected: Clearer message when no text is extracted.
+            console.log('No text could be extracted from the document.');
+            res.status(400).send('No text could be extracted from the document.');
         }
 
     } catch (error) {
         console.error('Error in processDocument:', error);
-        throw new Error('Failed to process document.');
+        res.status(500).send('An error occurred while processing the document.');
     }
 };

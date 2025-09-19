@@ -1,54 +1,48 @@
-const { VertexAI } = require('@google-cloud/vertexai');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
+const { PubSub } = require('@google-cloud/pubsub');
 
-/**
- * Generates vector embeddings for a given text using a Vertex AI model.
- * This is an HTTP-triggered function designed to be called by a Cloud Workflow.
- *
- * @param {object} req The HTTP request object.
- * @param {object} res The HTTP response object.
- */
-exports.vectorizeDealNote = async (req, res) => {
-    const { text } = req.body;
+const secretManagerClient = new SecretManagerServiceClient();
+const pubsub = new PubSub();
 
-    if (!text) {
-        res.status(400).send('Missing "text" property in request body.');
-        return;
-    }
+async function getApiKey() {
+  const name = 'projects/digital-shadow-417907/secrets/GEMINI_API_KEY/versions/latest';
+  const [version] = await secretManagerClient.accessSecretVersion({ name });
+  return version.payload.data.toString('utf8');
+}
 
-    console.log(`Vectorizing text...`);
+exports.vectorizeDealNote = async (cloudevent) => {
+  const { value } = cloudevent.data;
+  const { extractedText } = value.fields;
+  const documentId = cloudevent.document;
 
-    try {
-        // Initialize Vertex AI
-        const vertex_ai = new VertexAI({
-            project: process.env.GCP_PROJECT_ID,
-            location: process.env.GCP_REGION,
-        });
+  if (!extractedText || !extractedText.stringValue) {
+    console.log('No extractedText found in the document.');
+    return;
+  }
 
-        // Use the text-embedding-gecko@003 model
-        const model = vertex_ai.getGenerativeModel({
-            model: 'text-embedding-gecko@003',
-        });
+  console.log(`Received documentId: ${documentId}`);
 
-        // Generate embeddings
-        const embeddingResponse = await model.embedContent({
-            content: {
-                dataType: 'TEXT',
-                value: text,
-            },
-        });
+  try {
+    const apiKey = await getApiKey();
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "embedding-001"});
 
-        const embedding = embeddingResponse.embedding;
+    const result = await model.embedContent(extractedText.stringValue);
+    const embedding = result.embedding;
+    console.log('Successfully generated embedding.');
 
-        if (!embedding || !embedding.values) {
-            throw new Error('Invalid embedding response from model.');
-        }
+    const topic = pubsub.topic('new-document-ready');
+    const message = {
+      attributes: {
+        documentId: documentId,
+      },
+      data: Buffer.from(JSON.stringify({ embedding })),
+    };
+    await topic.publishMessage(message);
+    console.log('Successfully published message to Pub/Sub.');
 
-        console.log('Successfully generated embedding.');
-
-        res.status(200).json(embedding.values);
-
-    } catch (error) {
-        console.error('Error in vectorizeDealNote:', error);
-        res.status(500).send(`Failed to vectorize text: ${error.message}`);
-    }
+  } catch (error) {
+    console.error('Error generating embedding or publishing to Pub/Sub:', error);
+  }
 };

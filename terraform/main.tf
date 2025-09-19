@@ -23,12 +23,22 @@ resource "google_project_service" "enable_apis" {
     "iam.googleapis.com",
     "firestore.googleapis.com",
     "pubsub.googleapis.com",
-    "aiplatform.googleapis.com"
+    "aiplatform.googleapis.com",
+    "speech.googleapis.com"
   ])
 
   service = each.key
   disable_on_destroy = false
 }
+
+resource "google_firestore_database" "database" {
+  project     = var.project_id
+  name        = "(default)"
+  location_id = var.region
+  type        = "FIRESTORE_NATIVE"
+  depends_on = [google_project_service.enable_apis]
+}
+
 # 1. The Pub/Sub topic for downstream notifications
 resource "google_pubsub_topic" "new_document_topic" {
   name = "new-document-ready"
@@ -59,6 +69,9 @@ resource "google_cloudfunctions2_function" "generate_signed_url" {
       BUCKET_NAME = var.bucket_name
     }
   }
+  labels = {
+    "redeployment-timestamp" = formatdate("YYYYMMDDhhmmss", timestamp())
+  }
   depends_on = [google_project_service.enable_apis]
 }
 
@@ -68,7 +81,7 @@ resource "google_cloudfunctions2_function" "process_document" {
   location = var.region
 
   build_config {
-    runtime     = "nodejs18"
+    runtime     = "nodejs20"
     entry_point = "processDocument"
     source {
       storage_source {
@@ -82,6 +95,9 @@ resource "google_cloudfunctions2_function" "process_document" {
     service_account_email = var.service_account_email
     all_traffic_on_latest_revision = true
   }
+  labels = {
+    "redeployment-timestamp" = formatdate("YYYYMMDDhhmmss", timestamp())
+  }
   depends_on = [google_project_service.enable_apis]
 }
 
@@ -91,7 +107,7 @@ resource "google_cloudfunctions2_function" "vectorize_deal_note" {
   location = var.region
 
   build_config {
-    runtime     = "nodejs18"
+    runtime     = "nodejs20"
     entry_point = "vectorizeDealNote"
     source {
       storage_source {
@@ -101,9 +117,25 @@ resource "google_cloudfunctions2_function" "vectorize_deal_note" {
     }
   }
 
-  service_config {
-    service_account_email = var.service_account_email
-    all_traffic_on_latest_revision = true
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.firestore.document.v1.written"
+    event_filters {
+      attribute = "database"
+      value     = "(default)"
+    }
+    event_filters {
+      attribute = "namespace"
+      value     = "(default)"
+    }
+    event_filters {
+      attribute = "document"
+      value     = "processed_documents/{docId}"
+    }
+  }
+
+  labels = {
+    "redeployment-timestamp" = formatdate("YYYYMMDDhhmmss", timestamp())
   }
   depends_on = [google_project_service.enable_apis]
 }
@@ -119,11 +151,9 @@ main:
     params: [event]
     steps:
       - init:
-          assign: 
-            - file_info: $${json.decode(base64.decode(event.data.message.data))}
-            - project_id: "${var.project_id}"
-            - firestore_collection: "processed_documents"
-      - call_extract_text:
+          assign:
+            - file_info: $${event.data}
+      - call_process_document_function:
           try:
             call: http.post
             args:
@@ -134,78 +164,19 @@ main:
                 bucketName: $${file_info.bucket}
                 fileName: $${file_info.name}
                 contentType: $${file_info.contentType}
-            result: extracted_text_response
+            result: call_response
           except:
             as: e
             raise: e
-      - assign_extracted_text:
-          assign: 
-            - extracted_text: $${extracted_text_response.body}
-      - call_vectorize_text:
-          try:
-            call: http.post
-            args:
-              url: ${google_cloudfunctions2_function.vectorize_deal_note.service_config[0].uri}
-              auth:
-                type: OIDC
-              body:
-                text: $${extracted_text}
-            result: vector_embedding_response
-          except:
-            as: e
-            raise: e
-      - assign_vector_embedding:
-          assign: 
-            - vector_embedding: $${vector_embedding_response.body}
-      - prepare_for_firestore:
-          assign:
-            - firestore_embedding: []
-      - iterate_over_embedding:
-          for:
-            value: v
-            in: $${vector_embedding}
-            steps:
-              - create_double_value_object:
-                  assign:
-                    - double_value_object:
-                        doubleValue: $${v}
-              - add_to_firestore_embedding:
-                  assign:
-                    - firestore_embedding: $${list.concat(firestore_embedding, [double_value_object])}
-      - store_in_firestore:
-          call: googleapis.firestore.v1.projects.databases.documents.createDocument
-          args:
-            parent: "projects/$${project_id}/databases/(default)/documents"
-            collectionId: $${firestore_collection}
-            body:
-              fields:
-                fileName:
-                  stringValue: $${file_info.name}
-                extractedText:
-                  stringValue: $${extracted_text}
-                embedding:
-                  arrayValue:
-                    values: $${firestore_embedding}
-                timestamp:
-                  timestampValue: $${time.format(sys.now())}
-          result: firestore_document
-      - publish_notification:
-          call: googleapis.pubsub.v1.projects.topics.publish
-          args:
-            topic: "projects/$${project_id}/topics/${google_pubsub_topic.new_document_topic.name}"
-            body:
-              messages:
-                - attributes:
-                    documentId: $${firestore_document.name}
       - final_step:
-          return: "Pipeline finished successfully"
+          return: $${call_response.body}
   EOT
 
   depends_on = [
     google_project_service.enable_apis,
     google_pubsub_topic.new_document_topic,
     google_cloudfunctions2_function.process_document,
-    google_cloudfunctions2_function.vectorize_deal_note
+    google_firestore_database.database
   ]
 }
 
@@ -250,14 +221,6 @@ resource "google_cloud_run_service_iam_member" "allow_workflow_to_invoke_process
   depends_on = [google_project_service.enable_apis, google_cloudfunctions2_function.process_document]
 }
 
-resource "google_cloud_run_service_iam_member" "allow_workflow_to_invoke_vectorize_deal_note" {
-  location = google_cloudfunctions2_function.vectorize_deal_note.location
-  service  = google_cloudfunctions2_function.vectorize_deal_note.name
-  role     = "roles/run.invoker"
-  member   = "serviceAccount:${var.service_account_email}"
-  depends_on = [google_project_service.enable_apis, google_cloudfunctions2_function.vectorize_deal_note]
-}
-
 resource "google_storage_bucket_iam_member" "allow_eventarc_to_read_bucket" {
   bucket = var.bucket_name
   role   = "roles/storage.objectViewer"
@@ -274,4 +237,10 @@ resource "google_service_account_iam_member" "allow_self_to_sign_blobs" {
   service_account_id = "projects/${var.project_id}/serviceAccounts/${var.service_account_email}"
   role               = "roles/iam.serviceAccountTokenCreator"
   member             = "serviceAccount:${var.service_account_email}"
+}
+
+resource "google_project_iam_member" "allow_workflow_to_write_to_firestore" {
+  project = var.project_id
+  role    = "roles/datastore.owner"
+  member  = "serviceAccount:${var.service_account_email}"
 }

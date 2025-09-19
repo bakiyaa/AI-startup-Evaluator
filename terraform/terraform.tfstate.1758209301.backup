@@ -1,10 +1,97 @@
 {
   "version": 4,
   "terraform_version": "1.5.7",
-  "serial": 258,
+  "serial": 92,
   "lineage": "af8968f6-e584-e809-efc9-6c4b76ec6085",
   "outputs": {},
   "resources": [
+    {
+      "mode": "managed",
+      "type": "google_bigquery_dataset",
+      "name": "startup_kpis",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "access": [
+              {
+                "dataset": [],
+                "domain": "",
+                "group_by_email": "",
+                "iam_member": "",
+                "role": "OWNER",
+                "routine": [],
+                "special_group": "",
+                "user_by_email": "bakiyapalani1997@gmail.com",
+                "view": []
+              },
+              {
+                "dataset": [],
+                "domain": "",
+                "group_by_email": "",
+                "iam_member": "",
+                "role": "OWNER",
+                "routine": [],
+                "special_group": "projectOwners",
+                "user_by_email": "",
+                "view": []
+              },
+              {
+                "dataset": [],
+                "domain": "",
+                "group_by_email": "",
+                "iam_member": "",
+                "role": "READER",
+                "routine": [],
+                "special_group": "projectReaders",
+                "user_by_email": "",
+                "view": []
+              },
+              {
+                "dataset": [],
+                "domain": "",
+                "group_by_email": "",
+                "iam_member": "",
+                "role": "WRITER",
+                "routine": [],
+                "special_group": "projectWriters",
+                "user_by_email": "",
+                "view": []
+              }
+            ],
+            "creation_time": 1757751993215,
+            "dataset_id": "startup_kpis",
+            "default_collation": "",
+            "default_encryption_configuration": [],
+            "default_partition_expiration_ms": 0,
+            "default_table_expiration_ms": 0,
+            "delete_contents_on_destroy": false,
+            "description": "",
+            "effective_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "etag": "7ppSnQ03qvdTNDQNhhi2Gg==",
+            "external_dataset_reference": [],
+            "friendly_name": "",
+            "id": "projects/digital-shadow-417907/datasets/startup_kpis",
+            "is_case_insensitive": false,
+            "labels": {},
+            "last_modified_time": 1757751993215,
+            "location": "us-central1",
+            "max_time_travel_hours": "168",
+            "project": "digital-shadow-417907",
+            "resource_tags": {},
+            "self_link": "https://bigquery.googleapis.com/bigquery/v2/projects/digital-shadow-417907/datasets/startup_kpis",
+            "storage_billing_model": "",
+            "terraform_labels": {},
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMCJ9"
+        }
+      ]
+    },
     {
       "mode": "managed",
       "type": "google_cloud_run_service_iam_member",
@@ -27,6 +114,33 @@
           "private": "bnVsbA==",
           "dependencies": [
             "google_cloudfunctions2_function.process_document",
+            "google_project_service.enable_apis"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_cloud_run_service_iam_member",
+      "name": "allow_workflow_to_invoke_vectorize_deal_note",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "condition": [],
+            "etag": "BwY/Aye68HE=",
+            "id": "v1/projects/digital-shadow-417907/locations/us-central1/services/vectorize-deal-note/roles/run.invoker/serviceAccount:gemini-startup-evaluator@digital-shadow-417907.iam.gserviceaccount.com",
+            "location": "us-central1",
+            "member": "serviceAccount:gemini-startup-evaluator@digital-shadow-417907.iam.gserviceaccount.com",
+            "project": "digital-shadow-417907",
+            "role": "roles/run.invoker",
+            "service": "v1/projects/digital-shadow-417907/locations/us-central1/services/vectorize-deal-note"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "google_cloudfunctions2_function.vectorize_deal_note",
             "google_project_service.enable_apis"
           ]
         }
@@ -73,7 +187,7 @@
                 "automatic_update_policy": [
                   {}
                 ],
-                "build": "projects/617213468863/locations/us-central1/builds/ea16b9d2-127d-4d91-a7d1-5c8366e903e1",
+                "build": "projects/617213468863/locations/us-central1/builds/76a7f076-168f-4bfb-9a0a-dddfcb701cbd",
                 "docker_repository": "projects/digital-shadow-417907/locations/us-central1/repositories/gcf-artifacts",
                 "entry_point": "generateSignedUrl",
                 "environment_variables": {},
@@ -96,16 +210,12 @@
               }
             ],
             "description": "",
-            "effective_labels": {
-              "redeployment-timestamp": "20250919001321"
-            },
+            "effective_labels": {},
             "environment": "GEN_2",
             "event_trigger": [],
             "id": "projects/digital-shadow-417907/locations/us-central1/functions/generate-signed-url",
             "kms_key_name": "",
-            "labels": {
-              "redeployment-timestamp": "20250919001321"
-            },
+            "labels": {},
             "location": "us-central1",
             "name": "generate-signed-url",
             "project": "digital-shadow-417907",
@@ -134,11 +244,9 @@
               }
             ],
             "state": "ACTIVE",
-            "terraform_labels": {
-              "redeployment-timestamp": "20250919001321"
-            },
+            "terraform_labels": {},
             "timeouts": null,
-            "update_time": "2025-09-19T00:14:19.082224194Z",
+            "update_time": "2025-09-18T11:45:30.861087975Z",
             "url": "https://us-central1-digital-shadow-417907.cloudfunctions.net/generate-signed-url"
           },
           "sensitive_attributes": [],
@@ -163,12 +271,12 @@
                 "automatic_update_policy": [
                   {}
                 ],
-                "build": "projects/617213468863/locations/us-central1/builds/6b48a14a-9f93-4f1b-8222-6b4418a509b6",
+                "build": "projects/617213468863/locations/us-central1/builds/3c7706f6-5e3a-487d-8e3e-c4731089e08d",
                 "docker_repository": "projects/digital-shadow-417907/locations/us-central1/repositories/gcf-artifacts",
                 "entry_point": "processDocument",
                 "environment_variables": {},
                 "on_deploy_update_policy": [],
-                "runtime": "nodejs20",
+                "runtime": "nodejs18",
                 "service_account": "projects/digital-shadow-417907/serviceAccounts/617213468863-compute@developer.gserviceaccount.com",
                 "source": [
                   {
@@ -186,16 +294,12 @@
               }
             ],
             "description": "",
-            "effective_labels": {
-              "redeployment-timestamp": "20250919001321"
-            },
+            "effective_labels": {},
             "environment": "GEN_2",
             "event_trigger": [],
             "id": "projects/digital-shadow-417907/locations/us-central1/functions/process-document",
             "kms_key_name": "",
-            "labels": {
-              "redeployment-timestamp": "20250919001321"
-            },
+            "labels": {},
             "location": "us-central1",
             "name": "process-document",
             "project": "digital-shadow-417907",
@@ -223,11 +327,9 @@
               }
             ],
             "state": "ACTIVE",
-            "terraform_labels": {
-              "redeployment-timestamp": "20250919001321"
-            },
+            "terraform_labels": {},
             "timeouts": null,
-            "update_time": "2025-09-19T00:14:26.864614399Z",
+            "update_time": "2025-09-18T06:12:49.183130707Z",
             "url": "https://us-central1-digital-shadow-417907.cloudfunctions.net/process-document"
           },
           "sensitive_attributes": [],
@@ -252,12 +354,12 @@
                 "automatic_update_policy": [
                   {}
                 ],
-                "build": "projects/617213468863/locations/us-central1/builds/aa7198e1-fc70-48c7-a789-111a2db945aa",
+                "build": "projects/617213468863/locations/us-central1/builds/bb866c5a-22e7-4cea-9a57-b181b66982d2",
                 "docker_repository": "projects/digital-shadow-417907/locations/us-central1/repositories/gcf-artifacts",
                 "entry_point": "vectorizeDealNote",
                 "environment_variables": {},
                 "on_deploy_update_policy": [],
-                "runtime": "nodejs20",
+                "runtime": "nodejs18",
                 "service_account": "projects/digital-shadow-417907/serviceAccounts/617213468863-compute@developer.gserviceaccount.com",
                 "source": [
                   {
@@ -265,7 +367,7 @@
                     "storage_source": [
                       {
                         "bucket": "digital-shadow-function-source",
-                        "generation": 1758240357105539,
+                        "generation": 1758132582430170,
                         "object": "vectorize-deal-note.zip"
                       }
                     ]
@@ -275,42 +377,12 @@
               }
             ],
             "description": "",
-            "effective_labels": {
-              "redeployment-timestamp": "20250919001321"
-            },
+            "effective_labels": {},
             "environment": "GEN_2",
-            "event_trigger": [
-              {
-                "event_filters": [
-                  {
-                    "attribute": "database",
-                    "operator": "",
-                    "value": "(default)"
-                  },
-                  {
-                    "attribute": "document",
-                    "operator": "",
-                    "value": "processed_documents/{docId}"
-                  },
-                  {
-                    "attribute": "namespace",
-                    "operator": "",
-                    "value": "(default)"
-                  }
-                ],
-                "event_type": "google.cloud.firestore.document.v1.written",
-                "pubsub_topic": "projects/digital-shadow-417907/topics/eventarc-us-central1-vectorize-deal-note-646989-351",
-                "retry_policy": "RETRY_POLICY_DO_NOT_RETRY",
-                "service_account_email": "617213468863-compute@developer.gserviceaccount.com",
-                "trigger": "projects/digital-shadow-417907/locations/us-central1/triggers/vectorize-deal-note-646989",
-                "trigger_region": "us-central1"
-              }
-            ],
+            "event_trigger": [],
             "id": "projects/digital-shadow-417907/locations/us-central1/functions/vectorize-deal-note",
             "kms_key_name": "",
-            "labels": {
-              "redeployment-timestamp": "20250919001321"
-            },
+            "labels": {},
             "location": "us-central1",
             "name": "vectorize-deal-note",
             "project": "digital-shadow-417907",
@@ -330,7 +402,7 @@
                 "secret_environment_variables": [],
                 "secret_volumes": [],
                 "service": "projects/digital-shadow-417907/locations/us-central1/services/vectorize-deal-note",
-                "service_account_email": "617213468863-compute@developer.gserviceaccount.com",
+                "service_account_email": "gemini-startup-evaluator@digital-shadow-417907.iam.gserviceaccount.com",
                 "timeout_seconds": 60,
                 "uri": "https://vectorize-deal-note-4jtjhrb72q-uc.a.run.app",
                 "vpc_connector": "",
@@ -338,11 +410,9 @@
               }
             ],
             "state": "ACTIVE",
-            "terraform_labels": {
-              "redeployment-timestamp": "20250919001321"
-            },
+            "terraform_labels": {},
             "timeouts": null,
-            "update_time": "2025-09-19T00:14:22.061491860Z",
+            "update_time": "2025-09-18T06:12:21.027797208Z",
             "url": "https://us-central1-digital-shadow-417907.cloudfunctions.net/vectorize-deal-note"
           },
           "sensitive_attributes": [],
@@ -415,47 +485,10 @@
           "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
           "dependencies": [
             "google_cloudfunctions2_function.process_document",
-            "google_firestore_database.database",
+            "google_cloudfunctions2_function.vectorize_deal_note",
             "google_project_service.enable_apis",
             "google_pubsub_topic.new_document_topic",
             "google_workflows_workflow.mcp_pipeline"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "managed",
-      "type": "google_firestore_database",
-      "name": "database",
-      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
-      "instances": [
-        {
-          "schema_version": 0,
-          "attributes": {
-            "app_engine_integration_mode": "DISABLED",
-            "cmek_config": [],
-            "concurrency_mode": "PESSIMISTIC",
-            "create_time": "",
-            "delete_protection_state": "DELETE_PROTECTION_DISABLED",
-            "deletion_policy": "ABANDON",
-            "earliest_version_time": "2025-09-18T23:13:17.823483Z",
-            "etag": "IOqfvLHF448DMMjpy6y04o8D",
-            "id": "projects/digital-shadow-417907/databases/(default)",
-            "key_prefix": "",
-            "location_id": "us-central1",
-            "name": "(default)",
-            "point_in_time_recovery_enablement": "POINT_IN_TIME_RECOVERY_DISABLED",
-            "project": "digital-shadow-417907",
-            "timeouts": null,
-            "type": "FIRESTORE_NATIVE",
-            "uid": "b197e82c-57b2-4ad7-8019-a4c65484bc82",
-            "update_time": "",
-            "version_retention_period": "3600s"
-          },
-          "sensitive_attributes": [],
-          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMCJ9",
-          "dependencies": [
-            "google_project_service.enable_apis"
           ]
         }
       ]
@@ -470,7 +503,7 @@
           "schema_version": 0,
           "attributes": {
             "condition": [],
-            "etag": "BwY/GvMpPYY=",
+            "etag": "BwY/E3ddqrQ=",
             "id": "digital-shadow-417907/roles/pubsub.publisher/serviceAccount:service-617213468863@gs-project-accounts.iam.gserviceaccount.com",
             "member": "serviceAccount:service-617213468863@gs-project-accounts.iam.gserviceaccount.com",
             "project": "digital-shadow-417907",
@@ -491,11 +524,11 @@
           "schema_version": 0,
           "attributes": {
             "condition": [],
-            "etag": "BwY/GvMpPYY=",
-            "id": "digital-shadow-417907/roles/datastore.owner/serviceAccount:gemini-startup-evaluator@digital-shadow-417907.iam.gserviceaccount.com",
+            "etag": "BwY/E3ddqrQ=",
+            "id": "digital-shadow-417907/roles/datastore.user/serviceAccount:gemini-startup-evaluator@digital-shadow-417907.iam.gserviceaccount.com",
             "member": "serviceAccount:gemini-startup-evaluator@digital-shadow-417907.iam.gserviceaccount.com",
             "project": "digital-shadow-417907",
-            "role": "roles/datastore.owner"
+            "role": "roles/datastore.user"
           },
           "sensitive_attributes": [],
           "private": "bnVsbA=="
@@ -621,20 +654,6 @@
           "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjoxMjAwMDAwMDAwMDAwfX0="
         },
         {
-          "index_key": "speech.googleapis.com",
-          "schema_version": 0,
-          "attributes": {
-            "disable_dependent_services": null,
-            "disable_on_destroy": false,
-            "id": "digital-shadow-417907/speech.googleapis.com",
-            "project": "digital-shadow-417907",
-            "service": "speech.googleapis.com",
-            "timeouts": null
-          },
-          "sensitive_attributes": [],
-          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjoxMjAwMDAwMDAwMDAwfX0="
-        },
-        {
           "index_key": "workflows.googleapis.com",
           "schema_version": 0,
           "attributes": {
@@ -742,20 +761,20 @@
             "name_prefix": null,
             "project": "digital-shadow-417907",
             "region": null,
-            "revision_id": "000005-04d",
+            "revision_id": "000002-a01",
             "service_account": "projects/digital-shadow-417907/serviceAccounts/gemini-startup-evaluator@digital-shadow-417907.iam.gserviceaccount.com",
-            "source_contents": "main:\n    params: [event]\n    steps:\n      - init:\n          assign: \n            - file_info: ${event.data}\n            - project_id: \"digital-shadow-417907\"\n            - firestore_collection: \"processed_documents\"\n      - call_extract_text:\n          try:\n            call: http.post\n            args:\n              url: https://process-document-4jtjhrb72q-uc.a.run.app\n              auth:\n                type: OIDC\n              body:\n                bucketName: ${file_info.bucket}\n                fileName: ${file_info.name}\n                contentType: ${file_info.contentType}\n            result: extracted_text_response\n          except:\n            as: e\n            raise: e\n      - assign_extracted_text:\n          assign: \n            - extracted_text: ${extracted_text_response.body}\n      - store_in_firestore:\n          call: googleapis.firestore.v1.projects.databases.documents.createDocument\n          args:\n            parent: \"projects/${project_id}/databases/(default)/documents\"\n            collectionId: ${firestore_collection}\n            body:\n              fields:\n                fileName:\n                  stringValue: ${file_info.name}\n                extractedText:\n                  stringValue: ${extracted_text}\n                timestamp:\n                  timestampValue: ${time.format(sys.now())}\n          result: firestore_document\n      - final_step:\n          return: \"Pipeline finished successfully\"\n",
+            "source_contents": "main:\n    params: [event]\n    steps:\n      - init:\n          assign: \n            - file_info: ${event.data}\n            - project_id: \"digital-shadow-417907\"\n            - firestore_collection: \"processed_documents\"\n      - call_extract_text:\n          try:\n            call: http.post\n            args:\n              url: https://process-document-4jtjhrb72q-uc.a.run.app\n              auth:\n                type: OIDC\n              body:\n                bucketName: ${file_info.bucket}\n                fileName: ${file_info.name}\n                contentType: ${file_info.contentType}\n            result: extracted_text_response\n          except:\n            as: e\n            raise: e\n      - assign_extracted_text:\n          assign: \n            - extracted_text: ${extracted_text_response.body}\n      - call_vectorize_text:\n          try:\n            call: http.post\n            args:\n              url: https://vectorize-deal-note-4jtjhrb72q-uc.a.run.app\n              auth:\n                type: OIDC\n              body:\n                text: ${extracted_text}\n            result: vector_embedding_response\n          except:\n            as: e\n            raise: e\n      - assign_vector_embedding:\n          assign: \n            - vector_embedding: ${vector_embedding_response.body}\n      - prepare_for_firestore:\n          assign:\n            - firestore_embedding: []\n      - iterate_over_embedding:\n          for:\n            value: v\n            in: ${vector_embedding}\n            steps:\n              - create_double_value_object:\n                  assign:\n                    - double_value_object:\n                        doubleValue: ${v}\n              - add_to_firestore_embedding:\n                  assign:\n                    - firestore_embedding: ${list.concat(firestore_embedding, [double_value_object])}\n      - store_in_firestore:\n          call: googleapis.firestore.v1.projects.databases.documents.createDocument\n          args:\n            parent: \"projects/${project_id}/databases/(default)/documents\"\n            collectionId: ${firestore_collection}\n            body:\n              fields:\n                fileName:\n                  stringValue: ${file_info.name}\n                extractedText:\n                  stringValue: ${extracted_text}\n                embedding:\n                  arrayValue:\n                    values: ${firestore_embedding}\n                timestamp:\n                  timestampValue: ${time.format(sys.now())}\n          result: firestore_document\n      - publish_notification:\n          call: googleapis.pubsub.v1.projects.topics.publish\n          args:\n            topic: \"projects/${project_id}/topics/new-document-ready\"\n            body:\n              messages:\n                - attributes:\n                    documentId: ${firestore_document.name}\n      - final_step:\n          return: \"Pipeline finished successfully\"\n",
             "state": "ACTIVE",
             "terraform_labels": {},
             "timeouts": null,
-            "update_time": "2025-09-19T00:03:09.583165317Z",
+            "update_time": "2025-09-18T12:58:23.975170484Z",
             "user_env_vars": {}
           },
           "sensitive_attributes": [],
           "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
           "dependencies": [
             "google_cloudfunctions2_function.process_document",
-            "google_firestore_database.database",
+            "google_cloudfunctions2_function.vectorize_deal_note",
             "google_project_service.enable_apis",
             "google_pubsub_topic.new_document_topic"
           ]
