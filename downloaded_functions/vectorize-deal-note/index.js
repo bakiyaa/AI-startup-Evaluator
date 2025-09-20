@@ -18,9 +18,14 @@ exports.vectorizeDealNote = async (cloudevent) => {
 
   console.log(`Received projectId: ${projectId}, fileId: ${fileId}`);
 
+  let actualFileId = fileId;
+  if (fileId.includes('/')) {
+    actualFileId = fileId.split('/').pop();
+  }
+
   try {
     // 1. Get the text chunks from Firestore
-    const chunksQuery = firestore.collection('projects').doc(projectId).collection('files').doc(fileId).collection('textChunks').orderBy('order');
+    const chunksQuery = firestore.collection('projects').doc(projectId).collection('files').doc(actualFileId).collection('textChunks').orderBy('order');
     const chunksSnapshot = await chunksQuery.get();
     if (chunksSnapshot.empty) {
       console.log('No text chunks found for this document.');

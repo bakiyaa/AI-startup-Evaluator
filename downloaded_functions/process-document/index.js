@@ -68,6 +68,7 @@ exports.processDocument = async (req, res) => {
             return res.status(400).send('Missing bucketName, fileName, or contentType in request body.');
         }
 
+        console.log('Received request body:', req.body);
         console.log(`Processing file: ${fileName} from bucket: ${bucketName} with content type: ${contentType}`);
 
         const fileBuffer = await storage.bucket(bucketName).file(fileName).download();
@@ -171,11 +172,14 @@ exports.processDocument = async (req, res) => {
         }
 
         if (extractedText && extractedText.trim()) {
-            const projectId = path.dirname(fileName);
-            const actualFileName = path.basename(fileName);
-            const fileId = actualFileName.substring(0, actualFileName.lastIndexOf('.')) || actualFileName;
+            const pathComponents = fileName.split('/');
+            const actualFileIdWithExtension = pathComponents.pop(); // Get the last component (e.g., "cybersecurity_pitch")
+            const projectId = pathComponents.join('/'); // Everything before the last component (e.g., "8e4484d7-9e26-4090-aa19-62a3c91460bf")
 
-            const projectDocRef = firestore.collection('projects').doc(projectId);
+            const fileId = actualFileIdWithExtension.substring(0, actualFileIdWithExtension.lastIndexOf('.')) || actualFileIdWithExtension;
+
+            // Handle cases where projectId might be empty if fileName was just "file.pdf"
+            const projectDocRef = firestore.collection('projects').doc(projectId || 'default-project'); // Use a default project ID if none is found
             const fileDocRef = projectDocRef.collection('files').doc(fileId);
 
             const chunkSize = 500 * 1024;
@@ -194,7 +198,7 @@ exports.processDocument = async (req, res) => {
 
             // Set file data
             batch.set(fileDocRef, {
-                fileName: actualFileName,
+                fileName: actualFileIdWithExtension,
                 bucketName,
                 contentType,
                 geminiAnalysis: '',

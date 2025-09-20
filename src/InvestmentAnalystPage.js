@@ -5,11 +5,13 @@ import DealInformation from './DealInformation';
 import Controls from './Controls';
 import InsightDashboard from './InsightDashboard';
 import DataRoom from './DocumentViewer';
+import { useAuth } from './AuthContext'; // Import useAuth
 import { db } from './firebaseConfig';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 
 const InvestmentAnalystPage = () => {
+  const { currentUser } = useAuth(); // Get the current user from your AuthContext
   const [activeTab, setActiveTab] = useState('workspace');
 
   // State lifted from children components
@@ -77,6 +79,12 @@ const InvestmentAnalystPage = () => {
       return;
     }
 
+    if (!currentUser) {
+      alert('You must be logged in to run an analysis.');
+      setIsAnalyzing(false);
+      return;
+    }
+
     setIsAnalyzing(true);
     setAnalysisStage('initial');
     setAnalysisResults(null);
@@ -125,6 +133,7 @@ const InvestmentAnalystPage = () => {
       // --- Submit analysis job to Firestore ---
       const dealData = {
         projectId, // Include the project ID in the deal data
+        userId: currentUser.uid, // Add the user's ID for security rules
         weights,
         userComments, // This is UI data, not a file. It should be pushed to Firestore.
         filters,

@@ -24,8 +24,10 @@ resource "google_project_service" "enable_apis" {
     "firestore.googleapis.com",
     "pubsub.googleapis.com",
     "aiplatform.googleapis.com",
-    "speech.googleapis.com"
+    "speech.googleapis.com",
+ "videointelligence.googleapis.com"
   ])
+
 
   service = each.key
   disable_on_destroy = false
@@ -159,6 +161,11 @@ main:
       - decode_pubsub_message:
           assign:
             - file_info: $${json.decode(base64.decode(event.data.message.data))}
+      - log_file_info:
+          call: sys.log
+          args:
+            text: $${file_info}
+            severity: INFO
       - call_process_document:
           try:
             call: http.post
@@ -254,8 +261,16 @@ resource "google_service_account_iam_member" "allow_self_to_sign_blobs" {
   member             = "serviceAccount:${var.service_account_email}"
 }
 
-resource "google_project_iam_member" "allow_workflow_to_write_to_firestore" {
+resource "google_project_iam_member" "allow_eventarc_to_invoke_workflow" {
   project = var.project_id
-  role    = "roles/datastore.owner"
+  role    = "roles/workflows.invoker"
   member  = "serviceAccount:${var.service_account_email}"
+ depends_on = [google_project_service.enable_apis]
+}
+
+resource "google_project_iam_member" "allow_workflow_to_update_firestore" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${var.service_account_email}"
+ depends_on = [google_project_service.enable_apis]
 }
