@@ -31,20 +31,33 @@ function chunkString(str, size) {
 // Helper function to recursively extract text from PPTX slide XML
 function extractTextFromXml(node) {
     let text = '';
-    if (node && typeof node === 'object') {
-        if (node['a:t'] && typeof node['a:t'] === 'string') {
-            text += node['a:t'] + ' ';
-        }
-        for (const key in node) {
-            if (Array.isArray(node[key])) {
-                node[key].forEach(child => {
-                    text += extractTextFromXml(child);
-                });
-            } else if (typeof node[key] === 'object') {
-                text += extractTextFromXml(node[key]);
-            }
+    // If node is null or not an object/array, there's nothing to process.
+    if (!node || typeof node !== 'object') {
+        return '';
+    }
+
+    // If the node is an array, iterate over its elements and recurse.
+    if (Array.isArray(node)) {
+        node.forEach(child => {
+            text += extractTextFromXml(child);
+        });
+        return text;
+    }
+
+    // If we are at an object, check for the 'a:t' text tag, which is the text content.
+    // xml2js parses the text into an array, e.g., { 'a:t': ['Hello'] }
+    if (node['a:t'] && Array.isArray(node['a:t'])) {
+        text += node['a:t'].join(' ') + ' ';
+    }
+
+    // Recurse through all other child properties of the object.
+    for (const key in node) {
+        // Avoid reprocessing the text node we just handled.
+        if (key !== 'a:t') {
+            text += extractTextFromXml(node[key]);
         }
     }
+
     return text;
 }
 
@@ -158,27 +171,45 @@ exports.processDocument = async (req, res) => {
         }
 
         if (extractedText && extractedText.trim()) {
-            const startupId = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-            const mainDocRef = firestore.collection('startupanalyses').doc(startupId);
+            const projectId = path.dirname(fileName);
+            const actualFileName = path.basename(fileName);
+            const fileId = actualFileName.substring(0, actualFileName.lastIndexOf('.')) || actualFileName;
+
+            const projectDocRef = firestore.collection('projects').doc(projectId);
+            const fileDocRef = projectDocRef.collection('files').doc(fileId);
+
             const chunkSize = 500 * 1024;
             const textChunks = chunkString(extractedText, chunkSize);
             const chunkIds = [];
             const batch = firestore.batch();
+
             textChunks.forEach((chunk, index) => {
-                const chunkDocRef = mainDocRef.collection('textChunks').doc();
+                const chunkDocRef = fileDocRef.collection('textChunks').doc();
                 chunkIds.push(chunkDocRef.id);
                 batch.set(chunkDocRef, { order: index, content: chunk, timestamp: Firestore.FieldValue.serverTimestamp() });
             });
-            await batch.set(mainDocRef, {
-                fileName, bucketName, contentType, geminiAnalysis: '',
+
+            // Set project metadata (optional, but good practice)
+            batch.set(projectDocRef, { updatedAt: Firestore.FieldValue.serverTimestamp() }, { merge: true });
+
+            // Set file data
+            batch.set(fileDocRef, {
+                fileName: actualFileName,
+                bucketName,
+                contentType,
+                geminiAnalysis: '',
                 timestamp: Firestore.FieldValue.serverTimestamp(),
-                textChunkIds: chunkIds, numberOfTextChunks: chunkIds.length,
+                textChunkIds: chunkIds,
+                numberOfTextChunks: chunkIds.length,
             }, { merge: true });
+
             await batch.commit();
-            console.log(`Extracted text stored in ${textChunks.length} chunks for startupId: ${startupId}.`);
+
+            console.log(`Extracted text stored in ${textChunks.length} chunks for fileId: ${fileId} in project: ${projectId}.`);
             res.status(200).json({
-                message: 'Document processed and stored successfully.', 
-                startupId: startupId,
+                message: 'Document processed and stored successfully.',
+                projectId: projectId,
+                fileId: fileId,
                 chunks: chunkIds.length
             });
         } else {

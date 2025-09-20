@@ -27,7 +27,7 @@ exports.generateSignedUrl = async (req, res) => {
         return;
     }
 
-    const bucketName = process.env.BUCKET_NAME; // Will be set via environment variable
+        const bucketName = 'ai-starter-evaluation-bucket-9pguwa';
     if (!bucketName) {
         res.status(500).send('BUCKET_NAME environment variable not set.');
         return;

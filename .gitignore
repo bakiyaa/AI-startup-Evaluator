@@ -7,3 +7,5 @@ terraform/terraform.tfvars
 terraform/.terraform/
 functions/node_modules/
 terraform/.terraform/
+digital-shadow-417907-f2108ecba612.json
+gcp-credentials.json

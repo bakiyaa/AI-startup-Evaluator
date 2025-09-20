@@ -136,7 +136,7 @@ resource "google_cloudfunctions2_function" "vectorize_deal_note" {
     }
     event_filters {
       attribute = "document"
-      value     = "startupanalyses/{docId}"
+      value     = "projects/{projectId}/files/{fileId}"
     }
   }
 

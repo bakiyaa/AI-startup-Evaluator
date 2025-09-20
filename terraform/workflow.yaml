@@ -1,0 +1,53 @@
+# This workflow orchestrates the processing of a new file uploaded to Cloud Storage.
+# It is triggered by an Eventarc trigger.
+
+main:
+  params: [event]
+  steps:
+    - init:
+        assign:
+          - project_id: ${sys.get_env("GCP_PROJECT_ID")}
+          - bucket: ${event.data.bucket}
+          - name: ${event.data.name}
+    - extract_text:
+        call: http.post
+        args:
+          url: YOUR_EXTRACT_TEXT_FUNCTION_URL # This will be replaced by Terraform
+          body:
+            bucket: ${bucket}
+            name: ${name}
+        result: extracted_text
+    - vectorize_text:
+        call: http.post
+        args:
+          url: YOUR_VECTORIZE_TEXT_FUNCTION_URL # This will be replaced by Terraform
+          body:
+            text: ${extracted_text.body}
+        result: vector_embedding
+    - store_in_firestore:
+        call: googleapis.firestore.v1.projects.databases.documents.createDocument
+        args:
+          collectionId: "startupDocuments"
+          document:
+            fields:
+              fileName:
+                stringValue: ${name}
+              bucketName:
+                stringValue: ${bucket}
+              extractedText:
+                stringValue: ${extracted_text.body}
+              embedding:
+                arrayValue:
+                  values: ${vector_embedding.body.map(val => ({ doubleValue: val }))}
+              timestamp:
+                timestampValue: ${now()}
+        result: firestore_result
+    - publish_to_pubsub:
+        call: googleapis.pubsub.v1.projects.topics.publish
+        args:
+          topic: ${ "projects/" + project_id + "/topics/new-document-ready"}
+          messages:
+          - attributes:
+              firestoreDocumentId: ${firestore_result.name}
+    - final_step:
+        return: "Workflow completed successfully"

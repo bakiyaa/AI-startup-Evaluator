@@ -1,10 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './DealInformation.css';
 
-const DealInformation = ({ handleFindPeerGroup, filters, handleFilterChange, onDomainChange, onFilesChange }) => {
+const DealInformation = ({
+  handleFindPeerGroup,
+  filters,
+  handleFilterChange,
+  onFilesChange,
+  linkedinUrl,
+  onLinkedinUrlChange,
+  companyUrl,
+  onCompanyUrlChange
+}) => {
   const [pitchDeckFile, setPitchDeckFile] = useState(null);
   const [supportingDocs, setSupportingDocs] = useState([]);
-  const [domain, setDomain] = useState('');
   const pitchDeckInputRef = useRef(null);
   const supportingDocsInputRef = useRef(null);
 
@@ -12,10 +20,7 @@ const DealInformation = ({ handleFindPeerGroup, filters, handleFilterChange, onD
     const allFiles = [];
     if (pitchDeckFile) allFiles.push(pitchDeckFile);
     allFiles.push(...supportingDocs);
-    if (onFilesChange) {
-      // Pass the full File objects up to the parent component
-      onFilesChange(allFiles);
-    }
+    onFilesChange(allFiles); // Pass the full File objects up
   }, [pitchDeckFile, supportingDocs, onFilesChange]);
 
   const handlePitchDeckChange = (e) => {
@@ -78,8 +83,24 @@ const DealInformation = ({ handleFindPeerGroup, filters, handleFilterChange, onD
       </div>
 
       <div className="radio-group">
-        <label><input type="radio" name="revenue" value="pre" /> Pre-Revenue</label>
-        <label><input type="radio" name="revenue" value="post" defaultChecked /> Post-Revenue</label>
+        <label>
+          <input
+            type="radio"
+            name="revenue"
+            value="pre"
+            checked={filters.revenue === 'pre'}
+            onChange={handleFilterChange}
+          /> Pre-Revenue
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="revenue"
+            value="post"
+            checked={filters.revenue === 'post'}
+            onChange={handleFilterChange}
+          /> Post-Revenue
+        </label>
       </div>
 
       <select
@@ -103,10 +124,29 @@ const DealInformation = ({ handleFindPeerGroup, filters, handleFilterChange, onD
       <input 
         type="text" 
         className="text-input" 
+        name="domain"
         placeholder="Domain / Industry (e.g., Fintech, SaaS)"
-        value={domain} 
-        onChange={(e) => { setDomain(e.target.value); onDomainChange(e.target.value); }}
+        value={filters.domain || ''}
+        onChange={handleFilterChange}
       />
+
+      <div className="public-url-inputs">
+        <h4>Public URLs</h4>
+        <input
+          type="text"
+          className="text-input"
+          placeholder="LinkedIn Profile URL"
+          value={linkedinUrl}
+          onChange={(e) => onLinkedinUrlChange(e.target.value)}
+        />
+        <input
+          type="text"
+          className="text-input"
+          placeholder="Company Website URL"
+          value={companyUrl}
+          onChange={(e) => onCompanyUrlChange(e.target.value)}
+        />
+      </div>
       
     </div>
   );
