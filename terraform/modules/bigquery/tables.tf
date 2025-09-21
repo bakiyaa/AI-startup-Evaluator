@@ -47,7 +47,7 @@ EOF
   }
 
   require_partition_filter = true
-  clustering = ["sector", "stage", "country"]
+  depends_on = [google_bigquery_dataset.datasets["public_signals"]]
 }
 
 resource "google_bigquery_table" "events_news" {

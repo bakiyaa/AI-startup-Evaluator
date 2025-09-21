@@ -4,7 +4,7 @@ import Header from './Header';
 import DealInformation from './DealInformation';
 import Controls from './Controls';
 import InsightDashboard from './InsightDashboard';
-import DataRoom from './components/DataRoom';
+import DataRoom from './components/DataRoom.jsx';
 import { useAuth } from './AuthContext'; // Import useAuth
 import { db } from './firebaseConfig';
 import { collection, onSnapshot, query } from 'firebase/firestore';

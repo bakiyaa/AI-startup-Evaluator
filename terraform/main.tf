@@ -147,13 +147,13 @@ resource "google_cloudfunctions2_function" "vectorize_deal_note" {
 
   service_config {
     environment_variables = {
-      ALLOYDB_INSTANCE_CONNECTION_NAME = google_alloydb_instance.default.connection_name
+      ALLOYDB_INSTANCE_CONNECTION_NAME = format("projects/%s/locations/%s/clusters/%s/instances/%s", var.project_id, var.region, google_alloydb_cluster.default.cluster_id, google_alloydb_instance.default.instance_id)
       ALLOYDB_DB                       = "postgres"
       ALLOYDB_USER                     = "postgres"
     }
     secret_environment_variables {
       key        = "ALLOYDB_PASSWORD"
-      secret     = google_secret_manager_secret.alloydb_password.secret_id
+      secret     = data.google_secret_manager_secret.alloydb_password.secret_id
       version    = "latest"
       project_id = var.project_id
     }
@@ -316,7 +316,7 @@ resource "null_resource" "mcp_toolbox_build" {
   }
 
   provisioner "local-exec" {
-    command = "gcloud builds submit ${path.module}/../mcp-toolbox --config ${path.module}/../mcp-toolbox/cloudbuild.yaml --substitutions=_IMAGE_NAME=${google_artifact_registry_repository.mcp_toolbox_repo.location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.mcp_toolbox_repo.repository_id}/mcp-toolbox:latest"
+    command = "gcloud builds submit /home/bakiyapalani1997/AI-startup-Evaluator/mcp-toolbox --config /home/bakiyapalani1997/AI-startup-Evaluator/mcp-toolbox/cloudbuild.yaml --substitutions=_IMAGE_NAME=${google_artifact_registry_repository.mcp_toolbox_repo.location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.mcp_toolbox_repo.repository_id}/mcp-toolbox:latest"
   }
 }
 
@@ -345,6 +345,7 @@ resource "google_alloydb_cluster" "default" {
   network_config {
     network = "default"
   }
+  depends_on = [google_project_service.enable_apis]
 }
 
 resource "google_alloydb_instance" "default" {
@@ -360,21 +361,13 @@ resource "google_alloydb_instance" "default" {
   }
 }
 
-resource "google_secret_manager_secret" "alloydb_password" {
+data "google_secret_manager_secret" "alloydb_password" {
   provider  = google-beta
   project   = var.project_id
   secret_id = "alloydb-password"
-
-  replication {
-    automatic = true
-  }
 }
 
-resource "google_secret_manager_secret_version" "alloydb_password_version" {
-  provider      = google-beta
-  secret        = google_secret_manager_secret.alloydb_password.id
-  secret_data   = "vector"
-}
+
 
 resource "google_artifact_registry_repository" "rag_query_service_repo" {
   provider      = google-beta
@@ -392,7 +385,7 @@ resource "null_resource" "rag_query_service_build" {
   }
 
   provisioner "local-exec" {
-    command = "gcloud builds submit ${path.module}/../rag-query-service --config ${path.module}/../rag-query-service/cloudbuild.yaml --substitutions=_IMAGE_NAME=${google_artifact_registry_repository.rag_query_service_repo.location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.rag_query_service_repo.repository_id}/rag-query-service:latest"
+    command = "gcloud builds submit /home/bakiyapalani1997/AI-startup-Evaluator/rag-query-service --config /home/bakiyapalani1997/AI-startup-Evaluator/rag-query-service/cloudbuild.yaml --substitutions=_IMAGE_NAME=${google_artifact_registry_repository.rag_query_service_repo.location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.rag_query_service_repo.repository_id}/rag-query-service:latest"
   }
 }
 
@@ -408,7 +401,7 @@ resource "google_cloud_run_v2_service" "rag_query_service" {
       image = "${google_artifact_registry_repository.rag_query_service_repo.location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.rag_query_service_repo.repository_id}/rag-query-service:latest"
       env {
         name  = "ALLOYDB_INSTANCE_CONNECTION_NAME"
-        value = google_alloydb_instance.default.connection_name
+        value = format("projects/%s/locations/%s/clusters/%s/instances/%s", var.project_id, var.region, google_alloydb_cluster.default.cluster_id, google_alloydb_instance.default.instance_id)
       }
       env {
         name  = "ALLOYDB_DB"
@@ -422,7 +415,7 @@ resource "google_cloud_run_v2_service" "rag_query_service" {
         name = "ALLOYDB_PASSWORD"
         value_source {
           secret_key_ref {
-            secret  = google_secret_manager_secret.alloydb_password.secret_id
+            secret  = data.google_secret_manager_secret.alloydb_password.secret_id
             version = "latest"
           }
         }
@@ -431,7 +424,7 @@ resource "google_cloud_run_v2_service" "rag_query_service" {
         name = "GEMINI_API_KEY"
         value_source {
           secret_key_ref {
-            secret  = google_secret_manager_secret.gemini_api_key.secret_id
+            secret  = data.google_secret_manager_secret.gemini_api_key.secret_id
             version = "latest"
           }
         }
@@ -457,28 +450,18 @@ resource "google_cloud_run_v2_service" "rag_query_service" {
 
   depends_on = [
     null_resource.rag_query_service_build,
-    google_secret_manager_secret_version.alloydb_password_version,
-    google_secret_manager_secret_version.gemini_api_key_version,
     google_bigtable_table.default,
     google_cloud_run_v2_service.mcp_toolbox_service
   ]
 }
 
-resource "google_secret_manager_secret" "gemini_api_key" {
+data "google_secret_manager_secret" "gemini_api_key" {
   provider  = google-beta
   project   = var.project_id
   secret_id = "gemini-api-key"
-
-  replication {
-    automatic = true
-  }
 }
 
-resource "google_secret_manager_secret_version" "gemini_api_key_version" {
-  provider      = google-beta
-  secret        = google_secret_manager_secret.gemini_api_key.id
-  secret_data   = "AIzaSyAd-X_R6iK4czAZU9ukIavyZ9-4EguAv50"
-}
+
 
 resource "google_bigtable_instance" "ai_evaluator_bigtable" {
   provider = google-beta
@@ -541,4 +524,9 @@ resource "google_cloud_run_service_iam_member" "allow_rag_query_to_invoke_contex
   role     = "roles/run.invoker"
   member   = "serviceAccount:${var.service_account_email}"
   depends_on = [google_project_service.enable_apis, google_cloudfunctions2_function.context_management_service]
+}
+
+output "rag_query_service_uri" {
+  description = "The URI of the RAG Query Service."
+  value       = google_cloud_run_v2_service.rag_query_service.uri
 }

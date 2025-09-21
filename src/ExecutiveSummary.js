@@ -6,11 +6,23 @@ const ExecutiveSummary = ({ summary, suggestions }) => {
     return null;
   }
 
+  const renderSummary = () => {
+    if (typeof summary === 'string') {
+      return <p>{summary}</p>;
+    } else {
+      return (
+        <>
+          <p><strong>Recommendation:</strong> <span className="recommendation-text">{summary.recommendation}</span></p>
+          <p>{summary.text}</p>
+        </>
+      );
+    }
+  };
+
   return (
     <div className="executive-summary">
       <h3>Executive Summary</h3>
-      <p><strong>Recommendation:</strong> <span className="recommendation-text">{summary.recommendation}</span></p>
-      <p>{summary.text}</p>
+      {renderSummary()}
       <div className="suggestions-section">
         <h4>Suggestions</h4>
         {suggestions && suggestions.length > 0 ? (

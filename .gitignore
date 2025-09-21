@@ -10,3 +10,6 @@ terraform/.terraform/
 digital-shadow-417907-f2108ecba612.json
 gcp-credentials.json
 context-management-service.zip
+terraform.tfstate
+terraform.tfstate.backup
+*.zip
