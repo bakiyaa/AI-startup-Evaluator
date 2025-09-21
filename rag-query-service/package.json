@@ -1,0 +1,20 @@
+{
+  "name": "rag-query-service",
+  "version": "1.0.0",
+  "description": "A service to handle RAG queries.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "@google-cloud/cloud-sql-connector": "^1.2.1",
+    "@google-cloud/bigtable": "^4.3.1",
+    "@google/generative-ai": "^0.1.0",
+    "axios": "^1.6.7",
+    "@toolbox-sdk/core": "^0.1.2",
+    "@google-cloud/storage": "^7.11.0",
+    "@google-cloud/aiplatform": "^3.20.0"
+  }
+}

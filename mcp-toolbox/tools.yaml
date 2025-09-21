@@ -1,0 +1,161 @@
+project_id: digital-shadow-417907
+
+mcp:
+  version: 1
+  toolbox:
+    # The Cloud Run URL of the toolbox service; replace after deploy
+    base_url: https://mcp-toolbox-<hash>-uc.a.run.app
+    auth:
+      type: oidc         # Cloud Run → Cloud Run with OIDC
+      audience: https://mcp-toolbox-<hash>-uc.a.run.app
+
+tools:
+  - id: list_industries
+    description: "List the industries for which data is available."
+    transport: http
+    method: GET
+    path: /tool/list_industries
+    output_schema:
+      type: object
+      properties:
+        industries:
+          type: array
+          items: { type: string }
+
+  - id: fetch_kpis
+    description: Fetch curated KPI snapshot(s) for a company from Bigtable.
+    transport: http
+    method: POST
+    path: /tool/fetch_kpis
+    input_schema:
+      type: object
+      properties:
+        company_id: { type: string }
+        as_of: { type: string, description: "YYYYMMDD or 'latest'", default: "latest" }
+        families:
+          type: array
+          description: "Optional list of column families to include"
+          items: { type: string }
+      required: [company_id]
+    output_schema:
+      type: object
+      additionalProperties: true
+
+  - id: get_benchmarks
+    description: Return percentile benchmarks for a given metric within a specific industry or sub-industry.
+    transport: http
+    method: POST
+    path: /tool/get_benchmarks
+    input_schema:
+      type: object
+      properties:
+        metric: { type: string }        # e.g., take_rate_pct, sell_through_rate_pct
+        industry: { type: string, default: "all" }
+        sub_industry: { type: string, default: "all" }
+        as_of: { type: string, default: "latest" }
+      required: [metric]
+    output_schema:
+      type: object
+      properties:
+        p50: { type: number, nullable: true }
+        p75: { type: number, nullable: true }
+        p90: { type: number, nullable: true }
+
+  - id: calculate_peer_group
+    description: Identify peer companies using industry + size brackets and return company_ids.
+    transport: http
+    method: POST
+    path: /tool/calculate_peer_group
+    input_schema:
+      type: object
+      properties:
+        company_id: { type: string }
+        industry: { type: string, nullable: true }
+        k: { type: integer, default: 10 }
+        strategy:
+          type: string
+          enum: [ "industry", "sub_industry", "hybrid" ]
+          default: "hybrid"
+      required: [company_id]
+    output_schema:
+      type: object
+      properties:
+        peers:
+          type: array
+          items: { type: string }
+
+  - id: nearest_deal_notes
+    description: Vector search in AlloyDB to retrieve the most relevant deal note passages, optionally filtered by industry.
+    transport: http
+    method: POST
+    path: /tool/nearest_deal_notes
+    input_schema:
+      type: object
+      properties:
+        query: { type: string }
+        company_id: { type: string, nullable: true }
+        industry: { type: string, nullable: true }
+        k: { type: integer, default: 8 }
+      required: [query]
+    output_schema:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              company_id: { type: string }
+              source: { type: string }
+              score: { type: number }
+              content: { type: string }
+
+  - id: create_deal_note
+    description: Persist a structured, formatted Deal Note to Firestore (or update existing).
+    transport: http
+    method: POST
+    path: /tool/create_deal_note
+    input_schema:
+      type: object
+      properties:
+        company_id: { type: string }
+        title: { type: string }
+        body_markdown: { type: string }
+        sources:
+          type: array
+          items: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+      required: [company_id, title, body_markdown]
+    output_schema:
+      type: object
+      properties:
+        note_ref: { type: string }
+        updated_at: { type: string }
+
+  - id: request_missing_data
+    description: Open a structured request in context-management-service for any missing fields.
+    transport: http
+    method: POST
+    path: /tool/request_missing_data
+    input_schema:
+      type: object
+      properties:
+        company_id: { type: string }
+        fields:
+          type: array
+          items: { type: string }
+        priority:
+          type: string
+          enum: [ "low", "normal", "high", "urgent" ]
+          default: "normal"
+        due_in_hours: { type: integer, default: 48 }
+        notes: { type: string }
+      required: [company_id, fields]
+    output_schema:
+      type: object
+      properties:
+        request_id: { type: string }
+        status: { type: string }

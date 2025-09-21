@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './InvestmentAnalystPage.css';
 import Header from './Header';
 import DealInformation from './DealInformation';
 import Controls from './Controls';
 import InsightDashboard from './InsightDashboard';
-import DataRoom from './DocumentViewer';
+import DataRoom from './components/DataRoom';
 import { useAuth } from './AuthContext'; // Import useAuth
 import { db } from './firebaseConfig';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid';
+import QueryInterface from './components/QueryInterface';
 
 const InvestmentAnalystPage = () => {
   const { currentUser } = useAuth(); // Get the current user from your AuthContext
@@ -33,6 +35,29 @@ const InvestmentAnalystPage = () => {
 
   // Project ID State
   const [projectId, setProjectId] = useState('');
+  const selectedStartupId = useMemo(() => projectId, [projectId]);
+
+  // Data Room State
+  const [dataRoomEvents, setDataRoomEvents] = useState([]);
+  const [dataRequests, setDataRequests] = useState([]);
+
+  function handleActionRequest(actions, context) {
+    // Log to the Data Room
+    setDataRoomEvents(prev => [
+      ...prev,
+      {
+        id: nanoid(),
+        ts: Date.now(),
+        type: 'agent_actions',
+        actions,
+        context
+      }
+    ]);
+    // (Optional now) immediately open any link actions
+    actions.forEach(a => {
+      if (a.url) window.open(a.url, '_blank', 'noopener,noreferrer');
+    });
+  }
 
   // Effect to initialize or retrieve projectId from localStorage
   useEffect(() => {
@@ -43,6 +68,36 @@ const InvestmentAnalystPage = () => {
     }
     setProjectId(currentProjectId);
   }, []);
+
+  // Effect to fetch data requests from Firestore
+  useEffect(() => {
+    if (!projectId) return;
+
+    const q = query(collection(db, "projects", projectId, "data_requests"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const requests = [];
+      querySnapshot.forEach((doc) => {
+        requests.push({ id: doc.id, ...doc.data() });
+      });
+      setDataRequests(requests);
+    });
+
+    return () => unsubscribe();
+  }, [projectId]);
+
+  const timelineEvents = useMemo(() => {
+    const combined = [
+      ...dataRoomEvents,
+      ...dataRequests.map(req => ({
+        id: req.id,
+        ts: req.timestamp?.toMillis() || Date.now(),
+        type: 'data_request',
+        content: req.request_text,
+        status: req.status,
+      })),
+    ];
+    return combined.sort((a, b) => b.ts - a.ts);
+  }, [dataRoomEvents, dataRequests]);
 
   const handleNewProject = () => {
     if (window.confirm('Are you sure you want to start a new project? This will clear your current inputs.')) {
@@ -63,6 +118,7 @@ const InvestmentAnalystPage = () => {
       setUploadedFiles([]);
       setLinkedinUrl('');
       setCompanyUrl('');
+      setDataRoomEvents([]);
     }
   };
 
@@ -72,8 +128,6 @@ const InvestmentAnalystPage = () => {
   };
 
   const handleAnalyze = async () => {
-    // Only trigger upload for files that haven't been uploaded yet for this project.
-    // For this example, we'll re-upload each time, but in a real app you'd track this.
     if (uploadedFiles.length === 0 && !userComments) {
       alert('Please upload at least one file or add some comments to start the analysis.');
       return;
@@ -81,7 +135,6 @@ const InvestmentAnalystPage = () => {
 
     if (!currentUser) {
       alert('You must be logged in to run an analysis.');
-      setIsAnalyzing(false);
       return;
     }
 
@@ -89,33 +142,27 @@ const InvestmentAnalystPage = () => {
     setAnalysisStage('initial');
     setAnalysisResults(null);
     setGapAnalysisQuestions([]);
-    setActiveTab('insights'); // Switch to insights tab to show progress
+    setActiveTab('insights');
 
     try {
       // --- This is the new, secure file upload logic ---
-
-      // Helper function to upload a single file
       const uploadFile = async (file) => {
-        // These should ideally be in an environment configuration file
         const generateUrlFunctionName = process.env.REACT_APP_GENERATE_URL_FUNCTION || 'generate-signed-url';
         const region = process.env.REACT_APP_GCP_REGION || 'us-central1';
         const gcpProjectId = process.env.REACT_APP_GCP_PROJECT_ID || 'digital-shadow-417907';
         const bucketName = process.env.REACT_APP_GCS_BUCKET_NAME || 'ai-starter-evaluation-bucket-9pguwa';
 
         const generateUrlEndpoint = `https://${region}-${gcpProjectId}.cloudfunctions.net/${generateUrlFunctionName}`;
-        const filePath = `${projectId}/${file.name}`; // Use the persistent projectId for the folder
+        const filePath = `${projectId}/${file.name}`;
 
-        // 1. Get signed URL
         const res = await fetch(generateUrlEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          // Send the full path to the function so it can generate the correct URL
           body: JSON.stringify({ fileName: filePath, contentType: file.type }),
         });
         if (!res.ok) throw new Error(`Failed to get signed URL for ${file.name}`);
         const { url } = await res.json();
 
-        // 2. Upload file directly to GCS
         const uploadRes = await fetch(url, {
           method: 'PUT',
           headers: { 'Content-Type': file.type },
@@ -124,39 +171,31 @@ const InvestmentAnalystPage = () => {
         if (!uploadRes.ok) throw new Error(`Upload failed for ${file.name}`);
 
         console.log(`${file.name} uploaded successfully.`);
-        return `gs://${bucketName}/${filePath}`; // Return the full GCS path
+        return `gs://${bucketName}/${filePath}`;
       };
 
-      // Upload all files in parallel
-      const uploadedFilePaths = await Promise.all(uploadedFiles.map(uploadFile));
+      await Promise.all(uploadedFiles.map(uploadFile));
 
-      // --- Submit analysis job to Firestore ---
-      const dealData = {
-        projectId, // Include the project ID in the deal data
-        userId: currentUser.uid, // Add the user's ID for security rules
-        weights,
-        userComments, // This is UI data, not a file. It should be pushed to Firestore.
-        filters,
-        analysisMode,
-        linkedinUrl,
-        companyUrl,
-        uploadedFilePaths,
-        createdAt: serverTimestamp(),
-        status: 'processing', // Initial status
-      };
+      // --- This is the new logic ---
+      const initialQuery = `
+        Analyze the startup with the following details:
+        - LinkedIn URL: ${linkedinUrl}
+        - Company URL: ${companyUrl}
+        - User Comments: ${userComments}
+        - Uploaded Files: ${uploadedFiles.map(f => f.name).join(', ')}
+        - Project ID: ${projectId}
+      `;
 
-      const docRef = await addDoc(collection(db, "deals"), dealData);
-      console.log("Deal document written with ID: ", docRef.id);
+      const queryServiceUrl = process.env.REACT_APP_RAG_QUERY_SERVICE_URL || 'http://localhost:8080/query';
 
-      setAnalysisStage('formSent');
+      const res = await axios.post(queryServiceUrl, { query: initialQuery });
+      setAnalysisResults(res.data);
+      setAnalysisStage('finalReport');
 
     } catch (error) {
-      console.error("Analysis submission failed: ", error);
-      console.error("Error name: ", error.name);
-      console.error("Error message: ", error.message);
-      console.error("Error stack: ", error.stack);
+      console.error("Analysis failed: ", error);
       alert(`An error occurred: ${error.message}`);
-      setActiveTab('workspace'); // Go back to workspace on error
+      setActiveTab('workspace');
     } finally {
       setIsAnalyzing(false);
     }
@@ -179,8 +218,21 @@ const InvestmentAnalystPage = () => {
             handleAnalyzeAnyway={handleAnalyzeAnyway}
           />
         );
+      case 'askAnalyst':
+        return (
+            <div className="tab-panel ask-analyst" style={{ marginTop: 16 }}>
+                <QueryInterface
+                    selectedStartupId={selectedStartupId}
+                    onActionRequest={handleActionRequest}
+                />
+            </div>
+        );
       case 'dataroom':
-        return <DataRoom />;
+        return (
+            <div className="tab-panel data-room" style={{ marginTop: 16 }}>
+                <DataRoom events={timelineEvents} />
+            </div>
+        );
       case 'workspace':
       default:
         return (
@@ -216,6 +268,7 @@ const InvestmentAnalystPage = () => {
       <div className="tabs-container">
         <button onClick={() => setActiveTab('workspace')} className={activeTab === 'workspace' ? 'active' : ''}>Analysis Workspace</button>
         <button onClick={() => setActiveTab('insights')} className={activeTab === 'insights' ? 'active' : ''}>Insight Dashboard</button>
+        <button onClick={() => setActiveTab('askAnalyst')} className={activeTab === 'askAnalyst' ? 'active' : ''}>Ask Analyst</button>
         <button onClick={() => setActiveTab('dataroom')} className={activeTab === 'dataroom' ? 'active' : ''}>Data Room</button>
       </div>
       <main className="main-content">

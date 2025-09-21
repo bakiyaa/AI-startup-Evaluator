@@ -6,6 +6,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.1.0",
     "@google-cloud/secret-manager": "^5.0.0",
-    "@google-cloud/pubsub": "^4.0.0"
+    "@google-cloud/cloud-sql-connector": "^1.2.1",
+    "pg": "^8.11.3"
   }
 }

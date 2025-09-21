@@ -3,6 +3,7 @@ import './InsightDashboard.css';
 import ExecutiveSummary from './ExecutiveSummary';
 import RiskAnalysis from './RiskAnalysis';
 import Benchmarking from './Benchmarking';
+import QueryInterface from './QueryInterface'; // Added this line
 
 const InsightDashboard = ({ isAnalyzing, analysisStage, analysisResults, gapAnalysisQuestions, handleSendForm, handleAnalyzeAnyway }) => {
 
@@ -35,12 +36,18 @@ const InsightDashboard = ({ isAnalyzing, analysisStage, analysisResults, gapAnal
         return (
           <div>
             <ExecutiveSummary summary={analysisResults.summary} />
+            <QueryInterface />
             {/* You would add other components like RiskAnalysis, Benchmarking here, perhaps in their own cards */}
           </div>
         );
       case 'initial':
       default:
-        return <div className="card"><p>Click "Generate Insights" in the Analysis Workspace to start.</p></div>;
+        return (
+          <div>
+            <div className="card"><p>Click "Generate Insights" in the Analysis Workspace to start.</p></div>
+            <QueryInterface />
+          </div>
+        );
     }
   };
 

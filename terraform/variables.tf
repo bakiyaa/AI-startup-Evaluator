@@ -21,3 +21,9 @@ variable "service_account_email" {
   type        = string
   default     = "gemini-startup-evaluator@digital-shadow-417907.iam.gserviceaccount.com"
 }
+
+variable "env" {
+  description = "The environment name (e.g., dev, prod)."
+  type        = string
+  default     = "dev"
+}

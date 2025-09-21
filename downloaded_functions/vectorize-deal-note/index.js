@@ -1,10 +1,10 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
-const { PubSub } = require('@google-cloud/pubsub');
 const { Firestore } = require('@google-cloud/firestore');
+const { Connector } = require('@google-cloud/cloud-sql-connector');
+const { Pool } = require('pg');
 
 const secretManagerClient = new SecretManagerServiceClient();
-const pubsub = new PubSub();
 const firestore = new Firestore();
 
 async function getApiKey() {
@@ -12,6 +12,9 @@ async function getApiKey() {
   const [version] = await secretManagerClient.accessSecretVersion({ name });
   return version.payload.data.toString('utf8');
 }
+
+// Late-initialized pool, to be initialized on first function execution.
+let pool;
 
 exports.vectorizeDealNote = async (cloudevent) => {
   const { projectId, fileId } = cloudevent.params;
@@ -42,19 +45,30 @@ exports.vectorizeDealNote = async (cloudevent) => {
     const embedding = result.embedding;
     console.log('Successfully generated embedding.');
 
-    // 3. Publish to Pub/Sub
-    const topic = pubsub.topic('DownStreamAnalysis');
-    const message = {
-      attributes: {
-        projectId: projectId,
-        fileId: fileId,
-      },
-      data: Buffer.from(JSON.stringify({ embedding })),
-    };
-    await topic.publishMessage(message);
-    console.log('Successfully published message to Pub/Sub.');
+    // 3. Store embedding in AlloyDB
+    if (!pool) {
+      const connector = new Connector();
+      const clientOpts = await connector.getOptions({
+        instanceConnectionName: process.env.ALLOYDB_INSTANCE_CONNECTION_NAME,
+      });
+      pool = new Pool({
+        ...clientOpts,
+        user: process.env.ALLOYDB_USER,
+        password: process.env.ALLOYDB_PASSWORD,
+        database: process.env.ALLOYDB_DB,
+      });
+    }
+
+    const client = await pool.connect();
+    const query = 'INSERT INTO deal_notes (file_id, embedding) VALUES ($1, $2) ON CONFLICT (file_id) DO UPDATE SET embedding = $2';
+    // pgvector expects the vector in the format '[1,2,3]'
+    const embeddingString = `[${embedding.values.join(',')}]`;
+    const values = [actualFileId, embeddingString];
+    await client.query(query, values);
+    client.release();
+    console.log('Successfully stored embedding in AlloyDB.');
 
   } catch (error) {
-    console.error('Error generating embedding or publishing to Pub/Sub:', error);
+    console.error('Error generating embedding or storing in AlloyDB:', error);
   }
 };

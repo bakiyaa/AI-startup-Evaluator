@@ -4,12 +4,30 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 5.0"
     }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "~> 5.0"
+    }
   }
 }
 
 provider "google" {
   project = var.project_id
   region  = var.region
+}
+
+provider "google-beta" {
+  project = var.project_id
+  region  = var.region
+}
+
+resource "google_artifact_registry_repository" "mcp_toolbox_repo" {
+  provider      = google-beta
+  project       = var.project_id
+  location      = var.region
+  repository_id = "mcp-toolbox-repo"
+  description   = "Repository for MCP Toolbox container images"
+  format        = "DOCKER"
 }
 
 # 0. Enable all necessary APIs
@@ -25,7 +43,9 @@ resource "google_project_service" "enable_apis" {
     "pubsub.googleapis.com",
     "aiplatform.googleapis.com",
     "speech.googleapis.com",
- "videointelligence.googleapis.com"
+    "videointelligence.googleapis.com",
+    "alloydb.googleapis.com",
+    "bigtable.googleapis.com"
   ])
 
 
@@ -125,6 +145,20 @@ resource "google_cloudfunctions2_function" "vectorize_deal_note" {
     }
   }
 
+  service_config {
+    environment_variables = {
+      ALLOYDB_INSTANCE_CONNECTION_NAME = google_alloydb_instance.default.connection_name
+      ALLOYDB_DB                       = "postgres"
+      ALLOYDB_USER                     = "postgres"
+    }
+    secret_environment_variables {
+      key        = "ALLOYDB_PASSWORD"
+      secret     = google_secret_manager_secret.alloydb_password.secret_id
+      version    = "latest"
+      project_id = var.project_id
+    }
+  }
+
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.firestore.document.v1.written"
@@ -145,7 +179,7 @@ resource "google_cloudfunctions2_function" "vectorize_deal_note" {
   labels = {
     "redeployment-timestamp" = formatdate("YYYYMMDDhhmmss", timestamp())
   }
-  depends_on = [google_project_service.enable_apis]
+  depends_on = [google_project_service.enable_apis, google_alloydb_instance.default]
 }
 
 # 3. The main orchestration workflow
@@ -273,4 +307,238 @@ resource "google_project_iam_member" "allow_workflow_to_update_firestore" {
   role    = "roles/datastore.user"
   member  = "serviceAccount:${var.service_account_email}"
  depends_on = [google_project_service.enable_apis]
+}
+
+resource "null_resource" "mcp_toolbox_build" {
+  triggers = {
+    # This will re-run the build every time the content of the mcp-toolbox directory changes
+    dir_sha1 = sha1(join("", [for f in fileset("${path.module}/../mcp-toolbox", "**") : filesha1("${path.module}/../mcp-toolbox/${f}")]))
+  }
+
+  provisioner "local-exec" {
+    command = "gcloud builds submit ${path.module}/../mcp-toolbox --config ${path.module}/../mcp-toolbox/cloudbuild.yaml --substitutions=_IMAGE_NAME=${google_artifact_registry_repository.mcp_toolbox_repo.location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.mcp_toolbox_repo.repository_id}/mcp-toolbox:latest"
+  }
+}
+
+resource "google_cloud_run_v2_service" "mcp_toolbox_service" {
+  provider = google-beta
+  project  = var.project_id
+  location = var.region
+  name     = "mcp-toolbox-service"
+
+  template {
+    containers {
+      image = "${google_artifact_registry_repository.mcp_toolbox_repo.location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.mcp_toolbox_repo.repository_id}/mcp-toolbox:latest"
+    }
+  }
+
+  depends_on = [
+    null_resource.mcp_toolbox_build
+  ]
+}
+
+resource "google_alloydb_cluster" "default" {
+  provider = google-beta
+  project  = var.project_id
+  location = var.region
+  cluster_id = "alloydb-cluster"
+  network_config {
+    network = "default"
+  }
+}
+
+resource "google_alloydb_instance" "default" {
+  provider = google-beta
+  cluster = google_alloydb_cluster.default.name
+  instance_id = "alloydb-instance"
+  instance_type = "PRIMARY"
+  machine_config {
+    cpu_count = 2
+  }
+  database_flags = {
+    "alloydb.extensions" = "pgvector"
+  }
+}
+
+resource "google_secret_manager_secret" "alloydb_password" {
+  provider  = google-beta
+  project   = var.project_id
+  secret_id = "alloydb-password"
+
+  replication {
+    automatic = true
+  }
+}
+
+resource "google_secret_manager_secret_version" "alloydb_password_version" {
+  provider      = google-beta
+  secret        = google_secret_manager_secret.alloydb_password.id
+  secret_data   = "vector"
+}
+
+resource "google_artifact_registry_repository" "rag_query_service_repo" {
+  provider      = google-beta
+  project       = var.project_id
+  location      = var.region
+  repository_id = "rag-query-service-repo"
+  description   = "Repository for RAG Query Service container images"
+  format        = "DOCKER"
+}
+
+resource "null_resource" "rag_query_service_build" {
+  triggers = {
+    # This will re-run the build every time the content of the rag-query-service directory changes
+    dir_sha1 = sha1(join("", [for f in fileset("${path.module}/../rag-query-service", "**") : filesha1("${path.module}/../rag-query-service/${f}")]))
+  }
+
+  provisioner "local-exec" {
+    command = "gcloud builds submit ${path.module}/../rag-query-service --config ${path.module}/../rag-query-service/cloudbuild.yaml --substitutions=_IMAGE_NAME=${google_artifact_registry_repository.rag_query_service_repo.location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.rag_query_service_repo.repository_id}/rag-query-service:latest"
+  }
+}
+
+resource "google_cloud_run_v2_service" "rag_query_service" {
+  provider = google-beta
+  project  = var.project_id
+  location = var.region
+  name     = "rag-query-service"
+
+  template {
+    service_account = var.service_account_email
+    containers {
+      image = "${google_artifact_registry_repository.rag_query_service_repo.location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.rag_query_service_repo.repository_id}/rag-query-service:latest"
+      env {
+        name  = "ALLOYDB_INSTANCE_CONNECTION_NAME"
+        value = google_alloydb_instance.default.connection_name
+      }
+      env {
+        name  = "ALLOYDB_DB"
+        value = "postgres"
+      }
+      env {
+        name  = "ALLOYDB_USER"
+        value = "postgres"
+      }
+      env {
+        name = "ALLOYDB_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.alloydb_password.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name = "GEMINI_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.gemini_api_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name  = "BIGTABLE_INSTANCE_ID"
+        value = google_bigtable_instance.ai_evaluator_bigtable.name
+      }
+      env {
+        name  = "BIGTABLE_TABLE_ID"
+        value = google_bigtable_table.default.name
+      }
+      env {
+        name  = "MCP_TOOLBOX_URL"
+        value = google_cloud_run_v2_service.mcp_toolbox_service.uri
+      }
+      env {
+        name  = "CONTEXT_MANAGEMENT_SERVICE_URL"
+        value = google_cloudfunctions2_function.context_management_service.service_config[0].uri
+      }
+    }
+  }
+
+  depends_on = [
+    null_resource.rag_query_service_build,
+    google_secret_manager_secret_version.alloydb_password_version,
+    google_secret_manager_secret_version.gemini_api_key_version,
+    google_bigtable_table.default,
+    google_cloud_run_v2_service.mcp_toolbox_service
+  ]
+}
+
+resource "google_secret_manager_secret" "gemini_api_key" {
+  provider  = google-beta
+  project   = var.project_id
+  secret_id = "gemini-api-key"
+
+  replication {
+    automatic = true
+  }
+}
+
+resource "google_secret_manager_secret_version" "gemini_api_key_version" {
+  provider      = google-beta
+  secret        = google_secret_manager_secret.gemini_api_key.id
+  secret_data   = "AIzaSyAd-X_R6iK4czAZU9ukIavyZ9-4EguAv50"
+}
+
+resource "google_bigtable_instance" "ai_evaluator_bigtable" {
+  provider = google-beta
+  name     = "ai-evaluator-bigtable"
+  project  = var.project_id
+  cluster {
+    cluster_id   = "ai-evaluator-bigtable-cluster"
+    zone         = "us-central1-b"
+    num_nodes    = 1
+    storage_type = "SSD"
+  }
+}
+
+resource "google_bigtable_table" "default" {
+  provider      = google-beta
+  name          = "table1"
+  instance_name = google_bigtable_instance.ai_evaluator_bigtable.name
+  project       = var.project_id
+  column_family {
+    family = "company_info"
+  }
+}
+
+module "bigquery" {
+  source      = "./modules/bigquery"
+  project_id  = var.project_id
+  env         = var.env
+}
+
+resource "google_cloudfunctions2_function" "context_management_service" {
+  project  = var.project_id
+  name     = "context-management-service"
+  location = var.region
+
+  build_config {
+    runtime     = "python310"
+    entry_point = "agent_query"
+    source {
+      storage_source {
+        bucket = "digital-shadow-function-source"
+        object = "context-management-service.zip"
+      }
+    }
+  }
+
+  service_config {
+    service_account_email = var.service_account_email
+    all_traffic_on_latest_revision = true
+  }
+
+  labels = {
+    "redeployment-timestamp" = formatdate("YYYYMMDDhhmmss", timestamp())
+  }
+  depends_on = [google_project_service.enable_apis]
+}
+
+resource "google_cloud_run_service_iam_member" "allow_rag_query_to_invoke_context_management" {
+  location = google_cloudfunctions2_function.context_management_service.location
+  service  = google_cloudfunctions2_function.context_management_service.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${var.service_account_email}"
+  depends_on = [google_project_service.enable_apis, google_cloudfunctions2_function.context_management_service]
 }
