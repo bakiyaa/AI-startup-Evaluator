@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import './InvestmentAnalystPage.css';
+import axios from 'axios';
 import Header from './Header';
 import DealInformation from './DealInformation';
 import Controls from './Controls';
@@ -209,18 +210,20 @@ const InvestmentAnalystPage = () => {
     switch (activeTab) {
       case 'insights':
         return (
-          <InsightDashboard 
-            isAnalyzing={isAnalyzing}
-            analysisStage={analysisStage}
-            analysisResults={analysisResults}
-            gapAnalysisQuestions={gapAnalysisQuestions}
-            handleSendForm={handleSendForm}
-            handleAnalyzeAnyway={handleAnalyzeAnyway}
-          />
+          <div className="tab-panel">
+            <InsightDashboard 
+              isAnalyzing={isAnalyzing}
+              analysisStage={analysisStage}
+              analysisResults={analysisResults}
+              gapAnalysisQuestions={gapAnalysisQuestions}
+              handleSendForm={handleSendForm}
+              handleAnalyzeAnyway={handleAnalyzeAnyway}
+            />
+          </div>
         );
       case 'askAnalyst':
         return (
-            <div className="tab-panel ask-analyst" style={{ marginTop: 16 }}>
+            <div className="tab-panel ask-analyst">
                 <QueryInterface
                     selectedStartupId={selectedStartupId}
                     onActionRequest={handleActionRequest}
@@ -229,14 +232,14 @@ const InvestmentAnalystPage = () => {
         );
       case 'dataroom':
         return (
-            <div className="tab-panel data-room" style={{ marginTop: 16 }}>
+            <div className="tab-panel data-room">
                 <DataRoom events={timelineEvents} />
             </div>
         );
       case 'workspace':
       default:
         return (
-          <div className="workspace-grid">
+          <div className="tab-panel workspace-grid">
             <DealInformation 
               handleFilterChange={handleFilterChange}
               filters={filters}

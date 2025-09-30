@@ -1,6 +1,5 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
   args: ['build', '-t', '${_IMAGE_NAME}', '.']
-  dir: 'rag-query-service'
 images:
 - '${_IMAGE_NAME}'

@@ -44,8 +44,9 @@ resource "google_project_service" "enable_apis" {
     "aiplatform.googleapis.com",
     "speech.googleapis.com",
     "videointelligence.googleapis.com",
-    "alloydb.googleapis.com",
-    "bigtable.googleapis.com"
+    "sqladmin.googleapis.com",
+    "bigtable.googleapis.com",
+    "servicenetworking.googleapis.com"
   ])
 
 
@@ -147,13 +148,14 @@ resource "google_cloudfunctions2_function" "vectorize_deal_note" {
 
   service_config {
     environment_variables = {
-      ALLOYDB_INSTANCE_CONNECTION_NAME = format("projects/%s/locations/%s/clusters/%s/instances/%s", var.project_id, var.region, google_alloydb_cluster.default.cluster_id, google_alloydb_instance.default.instance_id)
-      ALLOYDB_DB                       = "postgres"
-      ALLOYDB_USER                     = "postgres"
+      DB_HOST = google_sql_database_instance.default.private_ip_address
+      DB_USER = google_sql_user.default.name
+      DB_PASS = data.google_secret_manager_secret.cloudsql_password.secret_id
+      DB_NAME = google_sql_database.default.name
     }
     secret_environment_variables {
-      key        = "ALLOYDB_PASSWORD"
-      secret     = data.google_secret_manager_secret.alloydb_password.secret_id
+      key        = "DB_PASS"
+      secret     = data.google_secret_manager_secret.cloudsql_password.secret_id
       version    = "latest"
       project_id = var.project_id
     }
@@ -179,7 +181,7 @@ resource "google_cloudfunctions2_function" "vectorize_deal_note" {
   labels = {
     "redeployment-timestamp" = formatdate("YYYYMMDDhhmmss", timestamp())
   }
-  depends_on = [google_project_service.enable_apis, google_alloydb_instance.default]
+  depends_on = [google_project_service.enable_apis, google_sql_database_instance.default]
 }
 
 # 3. The main orchestration workflow
@@ -194,11 +196,11 @@ main:
     steps:
       - decode_pubsub_message:
           assign:
-            - file_info: $${json.decode(base64.decode(event.data.message.data))}
+            - file_info: ${json.decode(base64.decode(event.data.message.data))}
       - log_file_info:
           call: sys.log
           args:
-            text: $${file_info}
+            text: ${file_info}
             severity: INFO
       - call_process_document:
           try:
@@ -208,9 +210,9 @@ main:
               auth:
                 type: OIDC
               body:
-                bucketName: $${file_info.bucket}
-                fileName: $${file_info.name}
-                contentType: $${file_info.contentType}
+                bucketName: ${file_info.bucket}
+                fileName: ${file_info.name}
+                contentType: ${file_info.contentType}
             result: call_response
           except:
             as: e
@@ -329,6 +331,9 @@ resource "google_cloud_run_v2_service" "mcp_toolbox_service" {
   template {
     containers {
       image = "${google_artifact_registry_repository.mcp_toolbox_repo.location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.mcp_toolbox_repo.repository_id}/mcp-toolbox:latest"
+      ports {
+        container_port = 8080
+      }
     }
   }
 
@@ -337,37 +342,70 @@ resource "google_cloud_run_v2_service" "mcp_toolbox_service" {
   ]
 }
 
-resource "google_alloydb_cluster" "default" {
+resource "google_compute_global_address" "private_ip_alloc" {
+  provider      = google-beta
+  name          = "cloudsql-private-ip-alloc"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = "default"
+}
+
+resource "google_service_networking_connection" "default" {
+  provider                = google-beta
+  network                 = "default"
+  service                 = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.private_ip_alloc.name]
+}
+
+resource "google_sql_database_instance" "default" {
+  # This resource is managed outside of Terraform and is imported.
   provider = google-beta
   project  = var.project_id
-  location = var.region
-  cluster_id = "alloydb-cluster"
-  network_config {
-    network = "default"
+  region   = var.region
+  name     = "cloudsql-instance"
+  database_version = "POSTGRES_15"
+  deletion_protection = true
+  settings {
+    tier = "db-n1-standard-2"
+    database_flags {
+      name  = "cloudsql.extensions"
+      value = "pgvector"
+    }
+    ip_configuration {
+      ipv4_enabled    = false
+      private_network = "default"
+    }
   }
-  depends_on = [google_project_service.enable_apis]
+  depends_on = [google_project_service.enable_apis, google_service_networking_connection.default]
 }
 
-resource "google_alloydb_instance" "default" {
+resource "google_sql_database" "default" {
   provider = google-beta
-  cluster = google_alloydb_cluster.default.name
-  instance_id = "alloydb-instance"
-  instance_type = "PRIMARY"
-  machine_config {
-    cpu_count = 2
-  }
-  database_flags = {
-    "alloydb.extensions" = "pgvector"
-  }
+  project  = var.project_id
+  instance = google_sql_database_instance.default.name
+  name     = var.cloud_sql_database_name
 }
 
-data "google_secret_manager_secret" "alloydb_password" {
+resource "google_sql_user" "default" {
+  provider = google-beta
+  project  = var.project_id
+  instance = google_sql_database_instance.default.name
+  name     = "postgres"
+  password = data.google_secret_manager_secret_version.cloudsql_password.secret_data
+}
+
+data "google_secret_manager_secret" "cloudsql_password" {
   provider  = google-beta
   project   = var.project_id
-  secret_id = "alloydb-password"
+  secret_id = "cloudsql-password"
 }
 
-
+data "google_secret_manager_secret_version" "cloudsql_password" {
+  provider = google-beta
+  project  = var.project_id
+  secret   = data.google_secret_manager_secret.cloudsql_password.secret_id
+}
 
 resource "google_artifact_registry_repository" "rag_query_service_repo" {
   provider      = google-beta
@@ -400,22 +438,22 @@ resource "google_cloud_run_v2_service" "rag_query_service" {
     containers {
       image = "${google_artifact_registry_repository.rag_query_service_repo.location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.rag_query_service_repo.repository_id}/rag-query-service:latest"
       env {
-        name  = "ALLOYDB_INSTANCE_CONNECTION_NAME"
-        value = format("projects/%s/locations/%s/clusters/%s/instances/%s", var.project_id, var.region, google_alloydb_cluster.default.cluster_id, google_alloydb_instance.default.instance_id)
+        name  = "DB_HOST"
+        value = google_sql_database_instance.default.private_ip_address
       }
       env {
-        name  = "ALLOYDB_DB"
-        value = "postgres"
+        name  = "DB_USER"
+        value = google_sql_user.default.name
       }
       env {
-        name  = "ALLOYDB_USER"
-        value = "postgres"
+        name  = "DB_NAME"
+        value = google_sql_database.default.name
       }
       env {
-        name = "ALLOYDB_PASSWORD"
+        name = "DB_PASS"
         value_source {
           secret_key_ref {
-            secret  = data.google_secret_manager_secret.alloydb_password.secret_id
+            secret  = data.google_secret_manager_secret.cloudsql_password.secret_id
             version = "latest"
           }
         }
@@ -499,6 +537,9 @@ resource "google_cloudfunctions2_function" "context_management_service" {
   build_config {
     runtime     = "python310"
     entry_point = "agent_query"
+    environment_variables = {
+      GOOGLE_FUNCTION_SOURCE = "index.py"
+    }
     source {
       storage_source {
         bucket = "digital-shadow-function-source"

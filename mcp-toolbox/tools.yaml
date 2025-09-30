@@ -4,15 +4,15 @@ mcp:
   version: 1
   toolbox:
     # The Cloud Run URL of the toolbox service; replace after deploy
-    base_url: https://mcp-toolbox-<hash>-uc.a.run.app
+    base_url: https://mcp-toolbox-service-digital-shadow-417907.us-central1.run.app
     auth:
       type: oidc         # Cloud Run → Cloud Run with OIDC
-      audience: https://mcp-toolbox-<hash>-uc.a.run.app
+      audience: https://mcp-toolbox-service-digital-shadow-417907.us-central1.run.app
 
 tools:
-  - id: list_industries
-    description: "List the industries for which data is available."
+  list_industries:
     transport: http
+    description: "List the industries for which data is available."
     method: GET
     path: /tool/list_industries
     output_schema:
@@ -22,9 +22,9 @@ tools:
           type: array
           items: { type: string }
 
-  - id: fetch_kpis
-    description: Fetch curated KPI snapshot(s) for a company from Bigtable.
+  fetch_kpis:
     transport: http
+    description: Fetch curated KPI snapshot(s) for a company from Bigtable.
     method: POST
     path: /tool/fetch_kpis
     input_schema:
@@ -41,9 +41,9 @@ tools:
       type: object
       additionalProperties: true
 
-  - id: get_benchmarks
-    description: Return percentile benchmarks for a given metric within a specific industry or sub-industry.
+  get_benchmarks:
     transport: http
+    description: Return percentile benchmarks for a given metric within a specific industry or sub-industry.
     method: POST
     path: /tool/get_benchmarks
     input_schema:
@@ -61,9 +61,9 @@ tools:
         p75: { type: number, nullable: true }
         p90: { type: number, nullable: true }
 
-  - id: calculate_peer_group
-    description: Identify peer companies using industry + size brackets and return company_ids.
+  calculate_peer_group:
     transport: http
+    description: Identify peer companies using industry + size brackets and return company_ids.
     method: POST
     path: /tool/calculate_peer_group
     input_schema:
@@ -84,9 +84,9 @@ tools:
           type: array
           items: { type: string }
 
-  - id: nearest_deal_notes
-    description: Vector search in AlloyDB to retrieve the most relevant deal note passages, optionally filtered by industry.
+  nearest_deal_notes:
     transport: http
+    description: Vector search in AlloyDB to retrieve the most relevant deal note passages, optionally filtered by industry.
     method: POST
     path: /tool/nearest_deal_notes
     input_schema:
@@ -111,9 +111,9 @@ tools:
               score: { type: number }
               content: { type: string }
 
-  - id: create_deal_note
-    description: Persist a structured, formatted Deal Note to Firestore (or update existing).
+  create_deal_note:
     transport: http
+    description: Persist a structured, formatted Deal Note to Firestore (or update existing).
     method: POST
     path: /tool/create_deal_note
     input_schema:
@@ -135,9 +135,9 @@ tools:
         note_ref: { type: string }
         updated_at: { type: string }
 
-  - id: request_missing_data
-    description: Open a structured request in context-management-service for any missing fields.
+  request_missing_data:
     transport: http
+    description: Open a structured request in context-management-service for any missing fields.
     method: POST
     path: /tool/request_missing_data
     input_schema:

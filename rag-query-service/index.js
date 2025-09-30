@@ -41,13 +41,13 @@ async function getDbPool() {
   if (!pool) {
     const connector = new Connector();
     const clientOpts = await connector.getOptions({
-      instanceConnectionName: process.env.ALLOYDB_INSTANCE_CONNECTION_NAME,
+      instanceConnectionName: process.env.DB_HOST,
     });
     pool = new Pool({
       ...clientOpts,
-      user: process.env.ALLOYDB_USER,
-      password: process.env.ALLOYDB_PASSWORD,
-      database: process.env.ALLOYDB_DB,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASS,
+      database: process.env.DB_NAME,
     });
   }
   return pool;
@@ -68,7 +68,7 @@ app.post('/query', async (req, res) => {
     const queryEmbedding = result.embedding;
     console.log('Successfully generated query embedding.');
 
-    // 2. Perform vector search in AlloyDB
+    // 2. Perform vector search in Cloud SQL
     const dbPool = await getDbPool();
     const client = await dbPool.connect();
     const queryEmbeddingString = `[${queryEmbedding.values.join(',')}]`;
@@ -78,7 +78,7 @@ app.post('/query', async (req, res) => {
     };
     const { rows: dealNotes } = await client.query(dbQuery);
     client.release();
-    console.log('Successfully performed vector search in AlloyDB.');
+    console.log('Successfully performed vector search in Cloud SQL.');
 
     // 3. Fetch additional data from Bigtable
     const companyIds = [...new Set(dealNotes.map(note => note.company_id))];

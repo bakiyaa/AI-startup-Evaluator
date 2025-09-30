@@ -5,7 +5,7 @@ import functions_framework
 # --- Import your agent module:
 # Place my-agents/context-agent-app/ inside this function folder (or copy it in CI),
 # so that "from my_agents.context_agent_app import agent" resolves at deploy time.
-agent_mod = importlib.import_module("context-agent-app.agent")
+agent_mod = importlib.import_module("my_agents.context_agent_app.agent")
 
 def _call_agent(event: dict) -> dict:
     """

@@ -27,3 +27,9 @@ variable "env" {
   type        = string
   default     = "dev"
 }
+
+variable "cloud_sql_database_name" {
+  description = "The name of the Cloud SQL database."
+  type        = string
+  default     = "postgres"
+}

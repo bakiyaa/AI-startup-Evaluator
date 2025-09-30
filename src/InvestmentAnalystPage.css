@@ -1,3 +1,33 @@
+/* Suggested additions for /home/bakiyapalani1997/AI-startup-Evaluator/src/InvestmentAnalystPage.css */
+
+.investment-analyst-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Make the page take full viewport height */
+}
+
+.main-content {
+  flex: 1; /* Allow the main content to grow and fill available space */
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* Add scroll for overflowing content */
+  padding: 16px 24px 24px; /* Replaces the individual margin-top on panels */
+}
+
+.tab-panel {
+  /* The padding on .main-content replaces the need for margin-top here */
+}
+
+.ask-analyst {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+/* The workspace is a grid, so we override the flex behavior from .tab-panel */
+.workspace-grid {
+    display: grid;
+}
 .investment-analyst-page .tabs-container {
   border-bottom: 1px solid var(--border-color);
   padding: 0 2rem; /* Align with main content padding */

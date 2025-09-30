@@ -45,17 +45,17 @@ exports.vectorizeDealNote = async (cloudevent) => {
     const embedding = result.embedding;
     console.log('Successfully generated embedding.');
 
-    // 3. Store embedding in AlloyDB
+    // 3. Store embedding in Cloud SQL
     if (!pool) {
       const connector = new Connector();
       const clientOpts = await connector.getOptions({
-        instanceConnectionName: process.env.ALLOYDB_INSTANCE_CONNECTION_NAME,
+        instanceConnectionName: process.env.DB_HOST,
       });
       pool = new Pool({
         ...clientOpts,
-        user: process.env.ALLOYDB_USER,
-        password: process.env.ALLOYDB_PASSWORD,
-        database: process.env.ALLOYDB_DB,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASS,
+        database: process.env.DB_NAME,
       });
     }
 
@@ -66,9 +66,9 @@ exports.vectorizeDealNote = async (cloudevent) => {
     const values = [actualFileId, embeddingString];
     await client.query(query, values);
     client.release();
-    console.log('Successfully stored embedding in AlloyDB.');
+    console.log('Successfully stored embedding in Cloud SQL.');
 
   } catch (error) {
-    console.error('Error generating embedding or storing in AlloyDB:', error);
+    console.error('Error generating embedding or storing in Cloud SQL:', error);
   }
 };

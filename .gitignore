@@ -13,3 +13,6 @@ context-management-service.zip
 terraform.tfstate
 terraform.tfstate.backup
 *.zip
+my-agents/.venv/
+toolbox
+mcp-toolbox/toolbox
